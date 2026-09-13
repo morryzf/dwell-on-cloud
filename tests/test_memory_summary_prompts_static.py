@@ -16,3 +16,5 @@ def test_memory_summary_prompts_refer_to_the_user_consistently():
     assert "用户或我的当时反应" in MAIN
     assert "用户学会了" in MAIN
     assert "用户变得更……" in MAIN
+    assert "目前的重要背景、近期对话方向和仍在进行的大事" in MAIN
+    assert "我们目前的关系状态" not in MAIN
