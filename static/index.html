@@ -762,13 +762,27 @@ html[data-theme="dark"] .composer {
   .group .grow .ic { width: 20px; height: 20px; color: var(--text); }
   .group .grow .val { margin-left: auto; color: var(--dim); font-size: 15px; }
   #settingsSheet .user-name-row { cursor: text; }
+  #settingsSheet .user-name-field {
+    width: min(58%, 210px); margin-left: auto; padding: 7px 9px;
+    display: flex; align-items: center; gap: 7px;
+    border: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+    border-radius: 10px; background: color-mix(in srgb, var(--text) 5%, transparent);
+    transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  }
+  #settingsSheet .user-name-field:focus-within {
+    border-color: var(--accent); background: var(--panel);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  }
   #settingsSheet .user-name-input {
-    min-width: 0; max-width: 58%; margin-left: auto; padding: 4px 0;
+    min-width: 0; width: 100%; padding: 0;
     border: 0; outline: 0; background: transparent; color: var(--text);
     text-align: right; font: inherit;
   }
   #settingsSheet .user-name-input::placeholder { color: var(--dim); }
-  #settingsSheet .user-name-input:focus { box-shadow: inset 0 -1px 0 var(--accent); }
+  #settingsSheet .user-name-status {
+    display: none; flex: none; color: var(--green); font-size: 12px; white-space: nowrap;
+  }
+  #settingsSheet .user-name-status.on { display: inline; }
   .group .grow .chev { color: var(--dim); font-size: 14px; }
   .group .grow .val + .chev { margin-left: 6px; }
   .group .grow:not(.static):active { background: rgba(0,0,0,.04); }
@@ -3490,7 +3504,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     <div class="body">
       <div class="group-label">账号</div>
       <div class="group">
-        <label class="grow static user-name-row" for="userNameInput"><span class="ic" data-i="user"></span><span>用户</span><input id="userNameInput" class="user-name-input" type="text" maxlength="32" placeholder="用户" autocomplete="nickname" aria-label="用户称呼"></label>
+        <label class="grow static user-name-row" for="userNameInput"><span class="ic" data-i="user"></span><span>用户称呼</span><span class="user-name-field"><input id="userNameInput" class="user-name-input" type="text" maxlength="32" placeholder="输入称呼" autocomplete="nickname" aria-label="用户称呼" aria-describedby="userNameStatus"><span id="userNameStatus" class="user-name-status" aria-live="polite"></span></span></label>
       </div>
       <div class="group-label">家</div>
       <div class="group">
@@ -8759,11 +8773,20 @@ renderFocus();
 
 let userDisplayName = '用户';
 const userNameInput = document.getElementById('userNameInput');
+const userNameStatus = document.getElementById('userNameStatus');
+let userNameStatusTimer;
 
 function setUserDisplayName(value) {
   const saved = String(value || '').trim().slice(0, 32);
   userDisplayName = saved || '用户';
   if (userNameInput) userNameInput.value = saved;
+}
+function showUserNameSaved() {
+  if (!userNameStatus) return;
+  clearTimeout(userNameStatusTimer);
+  userNameStatus.textContent = '已保存';
+  userNameStatus.classList.add('on');
+  userNameStatusTimer = setTimeout(() => userNameStatus.classList.remove('on'), 1600);
 }
 async function loadUserProfile() {
   const response = await fetch('api/user-profile', { cache: 'no-store' });
@@ -8778,6 +8801,7 @@ async function saveUserProfile() {
   });
   if (!response.ok) throw new Error('没有保存好');
   setUserDisplayName((await response.json()).name);
+  showUserNameSaved();
 }
 userNameInput.addEventListener('change', async () => {
   try { await saveUserProfile(); } catch { note('（用户称呼没有保存好）', 'err'); }
