@@ -2872,14 +2872,36 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     position: sticky; z-index: 3; top: -1px; min-height: 160px; padding: 16px 13px 13px;
     border-radius: 20px; overflow: hidden; box-sizing: border-box;
     display: flex; flex-direction: column; gap: 9px; justify-content: center;
-    background-color: var(--msg-preview-base, #faf9f5);
-    background-image: linear-gradient(180deg, var(--msg-preview-mask-top), var(--msg-preview-mask-bottom)), var(--chat-bg-image), linear-gradient(145deg, #eee8eb, #d8cbd1);
-    background-size: cover; background-position: center;
+    background-color: var(--msg-preview-base, #fcf9fa);
+    background-position: center;
     border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
     box-shadow: 0 8px 24px rgba(54,42,49,.12);
   }
-  .msg-style-preview[data-mode="light"] { --msg-preview-base: #faf9f5; --msg-preview-mask-top: rgba(250,249,245,.44); --msg-preview-mask-bottom: rgba(250,249,245,.64); }
-  .msg-style-preview[data-mode="dark"] { --msg-preview-base: #262624; --msg-preview-mask-top: rgba(38,38,36,.44); --msg-preview-mask-bottom: rgba(38,38,36,.64); }
+  .msg-style-preview[data-mode="light"] {
+    --msg-preview-base: #fcf9fa;
+    --msg-preview-mask-top: rgba(252,249,250,.44);
+    --msg-preview-mask-bottom: rgba(252,249,250,.64);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(148,138,145,.20) 1px, transparent 1.2px),
+      linear-gradient(90deg, rgba(217,167,183,.10) 1px, transparent 1px),
+      linear-gradient(rgba(217,167,183,.10) 1px, transparent 1px);
+    background-size: 14px 14px, 32px 32px, 32px 32px;
+  }
+  .msg-style-preview[data-mode="dark"] {
+    --msg-preview-base: #393538;
+    --msg-preview-mask-top: rgba(57,53,56,.44);
+    --msg-preview-mask-bottom: rgba(57,53,56,.64);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(238,209,220,.18) 1px, transparent 1.25px),
+      radial-gradient(ellipse at 50% -18%, rgba(231,167,191,.09), transparent 58%);
+    background-size: 19px 19px, 100% 100%;
+  }
+  html.has-chat-background .msg-style-preview {
+    background-image:
+      linear-gradient(180deg, var(--msg-preview-mask-top), var(--msg-preview-mask-bottom)),
+      var(--chat-bg-image);
+    background-size: cover;
+  }
   .msg-preview-cloudy, .msg-preview-me, .msg-preview-think {
     max-width: 82%; padding: 7px 11px; box-sizing: border-box; font-size: 12.5px;
   }
