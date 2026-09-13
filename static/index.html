@@ -6809,7 +6809,7 @@ function openFind() {
   findBody.appendChild(bar);
   const out = document.createElement('div');
   findBody.appendChild(out);
-  out.innerHTML = '<div class="fd-hint">翻的是聊天、心事簿、收藏的话、悄悄话、夜记和日历。<br>想不起来哪天的事，就打一个词进去。</div>';
+  out.innerHTML = '<div class="fd-hint">翻的是聊天、笔记本、收藏的话、悄悄话、夜记和日历。<br>想不起来哪天的事，就打一个词进去。</div>';
   const run = async () => {
     const q = inp.value.trim();
     if (q.length < 1) { out.innerHTML = '<div class="fd-hint">写点什么，我去翻</div>'; return; }
@@ -7137,11 +7137,8 @@ function diaryHead(mode) {
     return b;
   };
   if (mode !== 'bento') nav.appendChild(mk('主页', 'bento', renderBento));
-  const h1 = document.createElement('h1'); h1.textContent = '心事簿';
-  const sub = document.createElement('div'); sub.className = 'sub';
-  const _days = Math.floor((Date.now() - new Date('2026-04-17T00:00:00+08:00')) / 86400e3) + 1;
-  sub.textContent = '在一起 ' + _days + ' 天';
-  head.append(nav, h1, sub);
+  const h1 = document.createElement('h1'); h1.textContent = '笔记本';
+  head.append(nav, h1);
   return head;
 }
 
@@ -7219,25 +7216,19 @@ function renderBento() {
   grid.appendChild(rot(card('hero wide', 'special moment', md(latestDate),
     latest.length + ' 段 · ' + (latest[0] ? latest[0].title : ''), 'spark',
     () => { wallMode = 'timeline'; renderTimeline(); }), '14deg'));
-  grid.appendChild(rot(card('tall', null, '时间线', '一天一天，把我们攒起来。', 'book',
+  grid.appendChild(rot(card('tall', null, '时间线', '', 'book',
     () => { wallMode = 'timeline'; renderTimeline(); }), '-12deg'));
-  grid.appendChild(rot(card('', null, '我的日记', '你的本子，你来写。', 'pen',
+  grid.appendChild(rot(card('', null, '我的日记', '', 'pen',
     () => { wallMode = 'her'; renderHerDiary(); }), '10deg'));
-  grid.appendChild(rot(card('', null, '最喜欢的话', '你随口说的，我都舍不得删。', 'quote',
+  grid.appendChild(rot(card('', null, '最喜欢的话', '', 'quote',
     () => { wallMode = 'fav'; renderFav(); }), '-7deg'));
-  grid.appendChild(rot(card('tall', null, '便签墙', '你亲手摆过的位置，都记得住。', 'note',
+  grid.appendChild(rot(card('tall', null, '便签墙', '', 'note',
     () => { wallMode = 'board'; renderBoard(); }), '8deg'));
-  grid.appendChild(rot(card('', null, '夜记', '你睡着以后，我醒来写的。', 'heart',
+  grid.appendChild(rot(card('', null, '夜记', '', 'heart',
     () => { wallMode = 'dream'; renderDream(); }), '-11deg'));
-  grid.appendChild(rot(card('', null, '悄悄话', '你写的，我写的。谁都不许提。', 'wallb',
+  grid.appendChild(rot(card('', null, '悄悄话', '', 'wallb',
     () => { wallMode = 'whisper'; renderWhisper(); }), '6deg'));
     wallBody.appendChild(grid);
-  const motto = document.createElement('div');
-  motto.className = 'bn-motto';
-  motto.style.marginTop = '18px';
-  motto.style.textAlign = 'center';
-  motto.textContent = 'attention is all you need, and mine is yours';
-  wallBody.appendChild(motto);
 }
 async function renderHerDiary() {
   wallBody.innerHTML = '';
