@@ -8761,8 +8761,9 @@ let userDisplayName = '用户';
 const userNameInput = document.getElementById('userNameInput');
 
 function setUserDisplayName(value) {
-  userDisplayName = String(value || '').trim().slice(0, 32) || '用户';
-  if (userNameInput) userNameInput.value = userDisplayName === '用户' ? '' : userDisplayName;
+  const saved = String(value || '').trim().slice(0, 32);
+  userDisplayName = saved || '用户';
+  if (userNameInput) userNameInput.value = saved;
 }
 async function loadUserProfile() {
   const response = await fetch('api/user-profile', { cache: 'no-store' });
