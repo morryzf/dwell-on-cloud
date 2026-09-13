@@ -2834,7 +2834,8 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
 
   /* User-tunable message glass. My messages and Claude's messages keep
      separate light/dark profiles; thinking follows Claude's profile. */
-  #log .bubble {
+  #log .bubble,
+  html[data-theme="dark"] #log .bubble {
     color: var(--msg-me-text, #514a4f) !important;
     background: var(--msg-me-bg, rgba(248,242,245,.46)) !important;
     border: var(--msg-me-border-width, 1px) solid var(--msg-me-border, rgba(255,255,255,.42)) !important;
@@ -2843,7 +2844,8 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     backdrop-filter: blur(var(--msg-me-blur, 16px)) saturate(1.45);
     box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 6px 20px rgba(72,54,64,.075) !important;
   }
-  #log .gu {
+  #log .gu,
+  html[data-theme="dark"] #log .gu {
     color: var(--msg-cloudy-text, #514a4f) !important;
     background: var(--msg-cloudy-bg, rgba(248,242,245,.46)) !important;
     border: var(--msg-cloudy-border-width, 1px) solid var(--msg-cloudy-border, rgba(255,255,255,.42)) !important;
@@ -2851,6 +2853,22 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     -webkit-backdrop-filter: blur(var(--msg-cloudy-blur, 16px)) saturate(1.45);
     backdrop-filter: blur(var(--msg-cloudy-blur, 16px)) saturate(1.45);
     box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 6px 20px rgba(72,54,64,.075) !important;
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) #log .bubble {
+      color: var(--msg-me-text, #f7edf2) !important;
+      background: var(--msg-me-bg, rgba(79,65,72,.62)) !important;
+      border: var(--msg-me-border-width, 1px) solid var(--msg-me-border, rgba(242,201,220,.18)) !important;
+      border-radius: var(--msg-me-radius, 18px) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 6px 20px rgba(72,54,64,.075) !important;
+    }
+    html:not([data-theme="light"]) #log .gu {
+      color: var(--msg-cloudy-text, #f7edf2) !important;
+      background: var(--msg-cloudy-bg, rgba(79,65,72,.62)) !important;
+      border: var(--msg-cloudy-border-width, 1px) solid var(--msg-cloudy-border, rgba(242,201,220,.18)) !important;
+      border-radius: var(--msg-cloudy-radius, 18px) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 6px 20px rgba(72,54,64,.075) !important;
+    }
   }
   #log .row:not(.me) > .toolline {
     width: 100%; padding: 7px 11px; box-sizing: border-box;
