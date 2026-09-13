@@ -8,7 +8,7 @@ MAIN = (ROOT / "app" / "main.py").read_text(encoding="utf-8")
 
 def test_settings_exposes_a_persisted_user_display_name():
     assert 'id="userNameInput"' in INDEX
-    assert 'placeholder="用户"' in INDEX
+    assert 'placeholder="输入称呼"' in INDEX
     assert 'userDisplayName = saved || \'用户\'' in INDEX
     assert '@app.get("/api/user-profile", dependencies=authed)' in MAIN
     assert '@app.post("/api/user-profile", dependencies=authed)' in MAIN

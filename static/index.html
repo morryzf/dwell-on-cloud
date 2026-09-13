@@ -2565,6 +2565,33 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     box-shadow: 0 8px 22px rgba(12,8,10,.14), inset 0 1px rgba(255,235,244,.09) !important;
   }
 
+  /* Primary actions stay distinct from translucent secondary controls. */
+  .sheet .ap-b.go {
+    color: #fff !important;
+    background: linear-gradient(145deg, #a6657d, #875064) !important;
+    border-color: rgba(118, 63, 84, .72) !important;
+    box-shadow: 0 7px 17px rgba(111, 62, 82, .22), inset 0 1px rgba(255,255,255,.20) !important;
+    transition: transform 140ms var(--ease-out), filter 160ms ease, box-shadow 160ms ease;
+  }
+  .sheet .ap-b.go:active { transform: scale(.97); }
+  @media (hover: hover) and (pointer: fine) {
+    .sheet .ap-b.go:hover { filter: brightness(1.06); }
+  }
+  html[data-theme="dark"] .sheet .ap-b.go {
+    color: #35272d !important;
+    background: linear-gradient(145deg, #efc4d2, #d8a0b4) !important;
+    border-color: rgba(255,224,235,.42) !important;
+    box-shadow: 0 7px 18px rgba(0,0,0,.22), inset 0 1px rgba(255,255,255,.24) !important;
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) .sheet .ap-b.go {
+      color: #35272d !important;
+      background: linear-gradient(145deg, #efc4d2, #d8a0b4) !important;
+      border-color: rgba(255,224,235,.42) !important;
+      box-shadow: 0 7px 18px rgba(0,0,0,.22), inset 0 1px rgba(255,255,255,.24) !important;
+    }
+  }
+
   /* Header controls and composer toggles share the same quiet glass language. */
   header .iconbtn {
     background: linear-gradient(145deg, rgba(255,255,255,.25), rgba(235,199,215,.12)) !important;
@@ -10530,7 +10557,7 @@ async function loadLongContext() {
     if(memoryConsoleTab==='review') panel=`<div class="mc-toolbar"><button class="mc-btn primary" id="memoryGenerate" ${cardWorking?'disabled':''}>${cardWorking?'正在整理…':'生成未处理分段的记忆卡草稿'}</button>${drafts.length?`<button class="mc-btn" id="memoryAcceptAll" ${cardWorking?'disabled':''}>采用全部（${drafts.length}）</button>`:''}</div>${cards.state&&cards.state.error?`<div class="ap-msg on bad">${instructionEsc(cards.state.error)}</div>`:''}${drafts.length?`<div class="mc-stack">${drafts.map(item=>memoryCardView(item,cards.taxonomy,'draft')).join('')}</div>`:memoryEmpty(cardWorking?'正在整理候选':'没有待确认内容',cardWorking?'完成后会自动出现在这里。':'可以让模型检查尚未处理的新分段；任何候选都要由你逐条采用。')}`;
     if(memoryConsoleTab==='cards') panel=`<div class="mc-toolbar"><input class="ap-in" id="memorySearch" type="search" placeholder="搜索记忆内容" value="${instructionEsc(memoryConsoleQuery)}"><select class="ap-in" id="memoryFilter"><option value="all">全部状态</option><option value="active" ${memoryConsoleFilter==='active'?'selected':''}>可被挑选</option><option value="hidden" ${memoryConsoleFilter==='hidden'?'selected':''}>已隐藏</option><option value="high" ${memoryConsoleFilter==='high'?'selected':''}>固定保留</option></select></div>${active.length?`<div class="mc-stack">${active.map(item=>memoryCardView(item,cards.taxonomy,'card',recentIds)).join('')}</div><div class="mc-empty" id="memoryFilteredEmpty" hidden><strong>没有符合条件的记忆</strong>换个关键词或筛选条件看看。</div>`:memoryEmpty('还没有正式记忆卡','先到“待确认”生成候选，并逐条采用。')}`;
     if(memoryConsoleTab==='archive') panel=archived.length?`<div class="mc-stack">${archived.map(item=>memoryCardView(item,cards.taxonomy,'card')).join('')}</div>`:memoryEmpty('归档是空的','归档后的记忆会留在这里，可以随时恢复。');
-    body.innerHTML=`<div class="mc-intro"><h1>${instructionEsc(chat.name||'新对话')}</h1><p>总览维持这段关系的连续性；记忆卡把重要细节拆成可以管理的小条目。</p><div class="mc-safety${cards.injection_enabled?'':' off'}"><span class="ic" data-i="${cards.injection_enabled?'check':'x'}"></span><span>${cards.injection_enabled?'按需记忆已开启：每轮最多带入 5 条相关卡片；隐藏、归档和过期内容会自动排除。':'按需记忆已暂停：AI 仍会看到长期摘要和最近原文，但不会看到记忆卡。'}</span></div></div><div class="mc-tabs" role="tablist" aria-label="记忆管理">${tabHtml}</div><section class="mc-panel" role="tabpanel">${panel}</section>`;
+    body.innerHTML=`<div class="mc-intro"><h1>${instructionEsc(chat.name||'新对话')}</h1><p>总览维持对话的连续性；记忆卡把重要细节拆成可以管理的小条目。</p><div class="mc-safety${cards.injection_enabled?'':' off'}"><span class="ic" data-i="${cards.injection_enabled?'check':'x'}"></span><span>${cards.injection_enabled?'按需记忆已开启：每轮最多带入 5 条相关卡片；隐藏、归档和过期内容会自动排除。':'按需记忆已暂停：AI 仍会看到长期摘要和最近原文，但不会看到记忆卡。'}</span></div></div><div class="mc-tabs" role="tablist" aria-label="记忆管理">${tabHtml}</div><section class="mc-panel" role="tabpanel">${panel}</section>`;
     fillIcons(body);
     body.querySelectorAll('[data-memory-tab]').forEach(button=>button.onclick=()=>{memoryConsoleTab=button.dataset.memoryTab;loadLongContext();});
     if(memoryConsoleTab==='overview')wireMemoryOverview(chat,summary,cards);
