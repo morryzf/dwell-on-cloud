@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>和 Claude 一起看</title>
+<style>
+  :root{color-scheme:dark;font-family:ui-rounded,"Microsoft YaHei",system-ui;background:#141413;color:#f4f0e8}
+  *{box-sizing:border-box} body{margin:0;min-height:100vh}.top{height:58px;display:flex;align-items:center;gap:16px;padding:0 22px;border-bottom:1px solid #393832;background:#1b1b19}.top a{color:#cfc9bf;text-decoration:none}.top strong{font-size:18px}.wrap{max-width:1420px;margin:auto;padding:22px;display:grid;grid-template-columns:minmax(0,1.55fr) minmax(330px,.8fr);gap:22px}.card{background:#20201e;border:1px solid #3b3a35;border-radius:18px;padding:16px}.video{width:100%;max-height:70vh;background:#050505;border-radius:12px;display:block}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.pick,label.select{border:1px solid #4d4b44;background:#2d2c29;color:#f4f0e8;border-radius:10px;padding:8px 11px;font-size:14px}input[type=file]{display:none}select{background:#2d2c29;color:#f4f0e8;border:0;max-width:245px}.hint{color:#aaa59c;font-size:13px;line-height:1.5;margin:12px 2px}.status{font-size:13px;color:#b9d8c0}.messages{height:58vh;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:4px 2px}.msg{max-width:88%;padding:10px 12px;border-radius:13px;white-space:pre-wrap;line-height:1.5;font-size:14px}.me{align-self:flex-end;background:#565047}.gu{align-self:flex-start;background:#2e3b34}.system{align-self:center;color:#aaa59c;font-size:12px}.send{display:flex;gap:8px;margin-top:12px}.send textarea{resize:none;min-height:45px;max-height:150px;flex:1;border:1px solid #4d4b44;border-radius:12px;background:#171716;color:#fff;padding:10px;font:inherit}.send button{border:0;border-radius:12px;background:#e8e1d4;color:#1c1b19;font-weight:700;padding:0 16px}.caption{border-left:3px solid #bd9f76;padding:8px 10px;background:#292721;border-radius:5px;font-size:13px;line-height:1.5;min-height:40px}.title{font-weight:700;margin-bottom:7px}@media(max-width:820px){.wrap{grid-template-columns:1fr;padding:12px}.messages{height:38vh}.top{padding:0 14px}}
+</style>
+<body>
+<header class="top"><a href="/">← Dwell</a><strong>和 Claude 一起看</strong><span id="state" class="status">准备中</span></header>
+<main class="wrap">
+  <section class="card">
+    <div class="toolbar">
+      <label class="pick">选择本地视频<input id="videoFile" type="file" accept="video/*"></label>
+      <label class="pick">载入字幕（可选）<input id="subtitleFile" type="file" accept=".srt,.vtt,text/vtt,application/x-subrip"></label>
+      <label class="select">观影聊天：<select id="chat"></select></label>
+    </div>
+    <video id="video" class="video" controls playsinline></video>
+    <p id="videoName" class="hint">视频只在你的浏览器播放；完整文件不会上传。页面会低频截取当前画面，只有当你向 Claude 发言时才把最新画面随该条消息发送。</p>
+    <div class="title">Claude 此刻可见的字幕</div><div id="caption" class="caption">尚未载入字幕。仍可通过当前截帧理解画面。</div>
+    <div class="title" style="margin-top:14px">Claude 的观影笔记</div><div id="watchNote" class="caption">播放后会自动更新；这不是聊天记录。</div>
+  </section>
+  <aside class="card">
+    <div class="title">和 Claude 聊</div>
+    <div id="messages" class="messages"></div>
+    <div class="send"><textarea id="text" placeholder="说点什么；Claude 会同时看到当前画面和时间点"></textarea><button id="send">发送</button></div>
+    <p class="hint">提示：切到这个聊天后，请在 Dwell 的模型设置里选择 Claude Sonnet 4.6。此页不会替你改模型。</p>
+  </aside>
+</main>
+<script>
+const $=id=>document.getElementById(id), video=$('video'), chat=$('chat'), messages=$('messages');
+let subtitleCues=[], latestFrame='', pollCursor=0, selectedChat='', observing=false, lastObserveAt=0;
+const watchId=(globalThis.crypto&&crypto.randomUUID)?crypto.randomUUID():String(Date.now())+'-'+Math.random();
+function setState(s){$('state').textContent=s}
+function esc(t){const e=document.createElement('span');e.textContent=t||'';return e.innerHTML}
+function showMessage(m){let el=messages.querySelector('[data-id="'+CSS.escape(m.id||'')+'"]');if(!el){el=document.createElement('div');el.className='msg '+(m.kind|| (m.role==='user'?'me':'gu'));if(m.id)el.dataset.id=m.id;messages.appendChild(el)}el.textContent=m.text||m.content||'';messages.scrollTop=messages.scrollHeight}
+async function loadChats(){const d=await (await fetch('/api/chats')).json();chat.innerHTML='';(d.items||[]).filter(x=>!x.archived).forEach(x=>{const o=document.createElement('option');o.value=x.id;o.textContent=x.name||'新对话';if(x.current)o.selected=true;chat.appendChild(o)});selectedChat=chat.value;await loadMessages()}
+async function loadMessages(){messages.innerHTML='';pollCursor=0;if(!selectedChat)return;const d=await (await fetch('/api/messages?chat_id='+encodeURIComponent(selectedChat))).json();(d.msgs||d.messages||d.items||[]).forEach(m=>{pollCursor=Math.max(pollCursor,Number(m.seq)||0);showMessage(m)})}
+chat.onchange=async()=>{selectedChat=chat.value;await loadMessages();setState('已切换观影聊天')};
+function parseSubtitles(raw){const blocks=raw.replace(/\r/g,'').split(/\n\s*\n/);const toMs=s=>{const p=s.trim().replace(',', '.').split(':').map(Number);return Math.round(((p.length===3?p[0]*3600+p[1]*60+p[2]:p[0]*60+p[1])*1000))};subtitleCues=blocks.map(b=>{const lines=b.split('\n');const time=lines.findIndex(x=>x.includes('-->'));if(time<0)return null;const pair=lines[time].split('-->');return{a:toMs(pair[0]),b:toMs(pair[1]),t:lines.slice(time+1).join('\n').replace(/<[^>]+>/g,'').trim()}}).filter(Boolean)}
+function captionNow(){const at=Math.round(video.currentTime*1000);const near=subtitleCues.filter(c=>c.b>=at-7000&&c.a<=at+7000);$('caption').textContent=near.length?near.map(c=>c.t).join('\n'):'（这一刻附近没有字幕）';return near.map(c=>c.t).join('\n')}
+async function capture(){if(!video.videoWidth||video.readyState<2)return '';const max=640,k=Math.min(1,max/video.videoWidth),c=document.createElement('canvas');c.width=Math.max(1,Math.round(video.videoWidth*k));c.height=Math.max(1,Math.round(video.videoHeight*k));c.getContext('2d').drawImage(video,0,0,c.width,c.height);return await new Promise(resolve=>c.toBlob(blob=>{if(!blob){resolve('');return}const r=new FileReader();r.onload=()=>{latestFrame=r.result;resolve(latestFrame)};r.readAsDataURL(blob)},'image/jpeg',.6))}
+video.addEventListener('timeupdate',captionNow);video.addEventListener('loadedmetadata',()=>{captionNow();capture()});video.addEventListener('play',()=>setState('正在一起看'));
+setInterval(()=>{if(!video.paused)proactiveWatch()},180000);
+$('videoFile').onchange=e=>{const f=e.target.files[0];if(!f)return;if(video.src)URL.revokeObjectURL(video.src);video.src=URL.createObjectURL(f);$('videoName').textContent='正在播放：'+f.name+'。完整文件只留在此设备。';latestFrame='';lastObserveAt=0;$('watchNote').textContent='等待画面稳定后自动生成。'};
+$('subtitleFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;parseSubtitles(await f.text());captionNow();setState('字幕已载入')};
+async function proactiveWatch(){
+  if(observing||video.paused||!selectedChat)return;
+  const now=Date.now();if(now-lastObserveAt<170000)return;
+  observing=true;setState('Claude 正在看这一段…');
+  try{
+    const image=await capture()||latestFrame;if(!image)return;
+    const r=await fetch('/api/watch/proactive',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:selectedChat,watch_id:watchId,title:$('videoFile').files[0]?.name||'本地视频',at_ms:Math.round(video.currentTime*1000),subtitles:captionNow(),image})});
+    const d=await r.json();if(!r.ok)throw new Error(d.detail||'发送失败');
+    if(d.scheduled){lastObserveAt=Date.now();$('watchNote').textContent='Claude 已收到这段画面；他的反应会出现在右侧。';setState('Claude 正在回应…')}else setState('Claude 还在回复上一条');
+  }catch(e){setState('自动观影暂时没发送') }finally{observing=false}
+}
+
+async function send(){const text=$('text').value.trim();if(!text||!selectedChat)return;const image=await capture()||latestFrame;$('text').value='';setState('Claude 正在看…');const r=await fetch('/api/watch/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:selectedChat,watch_id:watchId,text,title:$('videoFile').files[0]?.name||'本地视频',at_ms:Math.round(video.currentTime*1000),subtitles:captionNow(),images:image?[image]:[]})});if(!r.ok){setState('发送失败');alert(await r.text());return}setState(image?'已发送画面与时间点':'已发送时间点')}
+$('send').onclick=()=>send();$('text').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+async function poll(){try{if(selectedChat){const d=await (await fetch('/api/poll?timeout=25&since='+pollCursor+'&chat_id='+encodeURIComponent(selectedChat))).json();pollCursor=d.next??pollCursor;(d.events||[]).forEach(e=>{if(e.type==='echo')showMessage({id:'echo-'+e.seq,kind:'me',text:e.text});if(e.type==='stream_event'){let m=messages.querySelector('[data-stream="1"]');if(!m){m=document.createElement('div');m.className='msg gu';m.dataset.stream='1';messages.appendChild(m)}m.textContent+=(e.event?.delta?.text||'');messages.scrollTop=messages.scrollHeight}else if(e.type==='result'){const m=messages.querySelector('[data-stream="1"]');if(m)delete m.dataset.stream}})}}catch(e){setState('连接重试中')}finally{setTimeout(poll,100)}}
+loadChats().then(()=>{setState('选择视频后即可开始');poll()}).catch(()=>setState('请先从 Dwell 登录'));
+</script>
+</body>
+</html>
+
