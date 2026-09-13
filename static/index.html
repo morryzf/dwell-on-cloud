@@ -761,6 +761,14 @@ html[data-theme="dark"] .composer {
   .group .grow + .grow { border-top: 1px solid var(--line); }
   .group .grow .ic { width: 20px; height: 20px; color: var(--text); }
   .group .grow .val { margin-left: auto; color: var(--dim); font-size: 15px; }
+  #settingsSheet .user-name-row { cursor: text; }
+  #settingsSheet .user-name-input {
+    min-width: 0; max-width: 58%; margin-left: auto; padding: 4px 0;
+    border: 0; outline: 0; background: transparent; color: var(--text);
+    text-align: right; font: inherit;
+  }
+  #settingsSheet .user-name-input::placeholder { color: var(--dim); }
+  #settingsSheet .user-name-input:focus { box-shadow: inset 0 -1px 0 var(--accent); }
   .group .grow .chev { color: var(--dim); font-size: 14px; }
   .group .grow .val + .chev { margin-left: 6px; }
   .group .grow:not(.static):active { background: rgba(0,0,0,.04); }
@@ -3482,7 +3490,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     <div class="body">
       <div class="group-label">账号</div>
       <div class="group">
-        <button class="grow static"><span class="ic" data-i="user"></span>用户<span class="val">本机</span></button>
+        <label class="grow static user-name-row" for="userNameInput"><span class="ic" data-i="user"></span><span>用户</span><input id="userNameInput" class="user-name-input" type="text" maxlength="32" placeholder="用户" autocomplete="nickname" aria-label="用户称呼"></label>
       </div>
       <div class="group-label">家</div>
       <div class="group">
@@ -8749,13 +8757,46 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) rend
 setInterval(renderFocus, 500);
 renderFocus();
 
+let userDisplayName = '用户';
+const userNameInput = document.getElementById('userNameInput');
+
+function setUserDisplayName(value) {
+  userDisplayName = String(value || '').trim().slice(0, 32) || '用户';
+  if (userNameInput) userNameInput.value = userDisplayName === '用户' ? '' : userDisplayName;
+}
+async function loadUserProfile() {
+  const response = await fetch('api/user-profile', { cache: 'no-store' });
+  if (!response.ok) return;
+  setUserDisplayName((await response.json()).name);
+}
+async function saveUserProfile() {
+  const raw = userNameInput.value.trim().slice(0, 32);
+  const response = await fetch('api/user-profile', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: raw }),
+  });
+  if (!response.ok) throw new Error('没有保存好');
+  setUserDisplayName((await response.json()).name);
+}
+userNameInput.addEventListener('change', async () => {
+  try { await saveUserProfile(); } catch { note('（用户称呼没有保存好）', 'err'); }
+});
+userNameInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.isComposing) userNameInput.blur();
+});
+
 /* ---------- 双人清单 ---------- */
 const todoBody = document.getElementById('todoBody');
 document.getElementById('navTodo').onclick = () => { closeDrawer(); sheets.todo.classList.add('open'); loadTodos(); };
 
 async function loadTodos() {
   try {
-    const d = await (await fetch('api/todos', { cache: 'no-store' })).json();
+    const [todosResponse, profileResponse] = await Promise.all([
+      fetch('api/todos', { cache: 'no-store' }),
+      fetch('api/user-profile', { cache: 'no-store' }),
+    ]);
+    const d = await todosResponse.json();
+    if (profileResponse.ok) setUserDisplayName((await profileResponse.json()).name);
     renderTodos(d);
   } catch {
     todoBody.innerHTML = '<div class="todo-empty">清单拿不到，网抖了一下，再开一次试试</div>';
@@ -8813,7 +8854,7 @@ function todoRow(t, list, canTouch) {
   const bits = [];
   if (t.fixed) bits.push('\u6bcf\u5929');
   if (!t.at && t.created) bits.push(stampOf(t.created) + ' \u8bb0\u7684');
-  bits.push(t.by === 'gu' ? '\u987e\u5c7f' : 'Morry');
+  bits.push(t.by === 'gu' ? '\u987e\u5c7f' : userDisplayName);
   small.textContent = bits.join(' \u00b7 ');
   tx.appendChild(small);
   r.append(box, tx);
@@ -8866,7 +8907,7 @@ function renderTodos(d) {
     return el;
   };
 
-  todoBody.appendChild(sect('Plum \u7684'));
+  todoBody.appendChild(sect(userDisplayName + ' \u7684'));
   const c1 = document.createElement('div');
   c1.className = 'hcard';
   if (!d.hers.length) c1.appendChild(emptyRow('\u7a7a\u7684\u2014\u2014\u7b49\u4ed6\u5e03\u7f6e\uff0c\u6216\u8005\u81ea\u5df1\u5199\u4e00\u6761'));
@@ -8914,9 +8955,13 @@ function renderTodos(d) {
 
   const foot = document.createElement('div');
   foot.className = 'hfoot';
-  foot.innerHTML = '<div style="letter-spacing:.06em;margin-bottom:4px">\u4eca\u5929\u4e5f\u8f9b\u82e6\u4e86\uff0cMorry</div>' +
-    'MORRY \u00b7 CLAUDE GENERAL STORE \u00b7 #' + codeOf(dt).replace(/ /g, '') +
+  const greeting = document.createElement('div');
+  greeting.style.cssText = 'letter-spacing:.06em;margin-bottom:4px';
+  greeting.textContent = '\u4eca\u5929\u4e5f\u8f9b\u82e6\u4e86\uff0c' + userDisplayName;
+  const receipt = document.createElement('div');
+  receipt.textContent = userDisplayName.toUpperCase() + ' \u00b7 CLAUDE GENERAL STORE \u00b7 #' + codeOf(dt).replace(/ /g, '') +
     String(total).padStart(2, '0') + String(paid).padStart(2, '0');
+  foot.append(greeting, receipt);
   todoBody.appendChild(foot);
   todoBody.scrollTop = keepTop;
 }
@@ -8973,7 +9018,7 @@ Object.entries(sheets).forEach(([k, wrap]) => {
   });
 });
 
-document.getElementById('avatarBtn').onclick = () => { closeDrawer(); sheets.settings.classList.add('open'); };
+document.getElementById('avatarBtn').onclick = async () => { closeDrawer(); sheets.settings.classList.add('open'); await loadUserProfile(); };
 document.getElementById('navUsage').onclick = () => { closeDrawer(); sheets.usage.classList.add('open'); loadOpenRouterUsage(); pushState(); };
 
 let systemLogCategory = '';
