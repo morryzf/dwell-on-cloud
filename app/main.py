@@ -3002,6 +3002,23 @@ async def model_set(request: Request):
     }
 
 
+def _user_display_name(value: object) -> str:
+    return " ".join(str(value or "").split())[:32]
+
+
+@app.get("/api/user-profile", dependencies=authed)
+async def user_profile_get():
+    return {"ok": True, "name": db.setting_get("user_display_name", "")}
+
+
+@app.post("/api/user-profile", dependencies=authed)
+async def user_profile_set(request: Request):
+    payload = await _read_json(request)
+    name = _user_display_name(payload.get("name", ""))
+    db.setting_set("user_display_name", name)
+    return {"ok": True, "name": name}
+
+
 @app.get("/api/wake", dependencies=authed)
 async def wake_get():
     config = _heartbeat_config()
