@@ -25,3 +25,15 @@ def test_chat_instruction_copy_uses_compact_type_hierarchy():
 def test_chat_instruction_checkbox_keeps_keyboard_focus_feedback():
     assert '#chatInstructionsBody .chat-instruction-option:has(.chat-instruction-input:focus-visible)' in INDEX
     assert '<label class="grow"><input type="checkbox" id="splitReplies"' not in INDEX
+
+
+def test_reply_style_heading_is_a_quiet_label_outside_the_card():
+    assert 'class="group-label chat-instruction-section-label">回复方式</div>' in INDEX
+    assert 'class="group chat-instruction-reply-group"' in INDEX
+    assert '<div class="ap-section"><div class="ap-section-title">回复方式</div>' not in INDEX
+
+    label_rule = INDEX.index('#chatInstructionsBody .chat-instruction-section-label {')
+    assert 'color: var(--dim)' in INDEX[label_rule:label_rule + 180]
+    assert 'font-size: 13px' in INDEX[label_rule:label_rule + 180]
+    assert 'font-weight: 400' in INDEX[label_rule:label_rule + 180]
+    assert '#chatInstructionsBody .chat-instruction-reply-group { margin-bottom: 20px; }' in INDEX
