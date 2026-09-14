@@ -816,6 +816,40 @@ html[data-theme="dark"] .composer {
     outline: 2px solid var(--accent-soft); outline-offset: -3px;
   }
 
+  /* 当前聊天 MCP：沿用指令选择器的层级和粉色选中态 */
+  #chatMcpBody .chat-mcp-section-label {
+    padding: 14px 4px 7px; color: var(--dim); font-size: 13px; font-weight: 400; line-height: 1.5;
+  }
+  #chatMcpBody .chat-mcp-group { margin-bottom: 20px; }
+  #chatMcpBody .chat-mcp-note {
+    padding: 13px 16px; color: var(--dim); font-size: 13px; line-height: 1.55;
+  }
+  #chatMcpBody .chat-mcp-detail { padding-top: 11px; border-top: 1px solid var(--line); }
+  #chatMcpBody .chat-mcp-option {
+    position: relative; display: flex; align-items: center; gap: 10px; width: 100%;
+    min-height: 52px; padding: 13px 16px; cursor: pointer;
+  }
+  #chatMcpBody .chat-mcp-input {
+    position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none;
+  }
+  #chatMcpBody .chat-mcp-name {
+    flex: none; color: var(--text); font-size: 15px; font-weight: 500; line-height: 1.5;
+  }
+  #chatMcpBody .chat-mcp-content {
+    min-width: 0; margin-left: auto; overflow: hidden; color: var(--dim);
+    font-size: 13px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #chatMcpBody .chat-mcp-check {
+    flex: none; width: 14px; color: var(--accent); font-size: 12px;
+    font-weight: 800; line-height: 1; opacity: 0; text-align: right;
+  }
+  #chatMcpBody .chat-mcp-option:not(:has(.chat-mcp-content)) .chat-mcp-check { margin-left: auto; }
+  #chatMcpBody .chat-mcp-input:checked + .chat-mcp-name { color: var(--accent); }
+  #chatMcpBody .chat-mcp-input:checked ~ .chat-mcp-check { opacity: 1; }
+  #chatMcpBody .chat-mcp-option:has(.chat-mcp-input:focus-visible) {
+    outline: 2px solid var(--accent-soft); outline-offset: -3px;
+  }
+
   .gnote { font-size: 13.5px; color: var(--dim); padding: 12px 6px 0; line-height: 1.6; }
 
   /* 模型供应商 / MCP：两个设置页共用的表单骨架 */
@@ -10364,8 +10398,8 @@ async function loadChatMcp() {
   const body=document.getElementById('chatMcpBody'); body.innerHTML='<div class="gnote">正在拿工具清单…</div>';
   try {
     const d=await (await fetch('api/mcp/chat',{cache:'no-store'})).json(); const items=d.items||[];
-    body.innerHTML=`<div class="sh-head"><h1>当前聊天的工具</h1><div class="sub">模型会自己决定是否调用已启用的工具。</div></div><div class="ap-section"><div class="ap-section-title">内置网页工具</div><div class="gnote">网页搜索和读取网页链接已启用；它们只会访问公共 http(s) 地址。</div></div><div class="ap-section"><div class="ap-section-title">家里的功能</div><label class="grow"><input type="checkbox" id="chatHomeTodos" ${d.home_todos_enabled?'checked':''}> 允许 Claude 使用待办、日记和日历</label><div class="gnote">可以查看和修改这三个页面；这是当前聊天单独的授权，每一次调用都会显示在聊天记录里。</div></div>`
-      +(items.length?`<div class="group" id="chatMcpList">${items.map(s=>`<label class="grow"><input type="checkbox" value="${instructionEsc(s.id)}" ${s.selected?'checked':''}> ${instructionEsc(s.name)}<span class="val">${s.transport==='sse'?'SSE':'HTTP'}</span></label>`).join('')}</div>`:'<div class="gnote">还没有 MCP 服务器，先去设置里的 MCP 工具添加。</div>')+`<div class="ap-msg" id="chatMcpMsg"></div>`;
+    body.innerHTML=`<div class="sh-head"><h1>当前聊天的工具</h1><div class="sub">模型会自己决定是否调用已启用的工具。</div></div><div class="group-label chat-mcp-section-label">内置网页工具</div><div class="group chat-mcp-group"><div class="chat-mcp-note">网页搜索和读取网页链接已启用；它们只会访问公共 http(s) 地址。</div></div><div class="group-label chat-mcp-section-label">家里的功能</div><div class="group chat-mcp-group"><label class="grow chat-mcp-option"><input class="chat-mcp-input" type="checkbox" id="chatHomeTodos" ${d.home_todos_enabled?'checked':''}><span class="chat-mcp-name">允许 Claude 使用待办、日记和日历</span><span class="chat-mcp-check" aria-hidden="true">✓</span></label><div class="chat-mcp-note chat-mcp-detail">可以查看和修改这三个页面；这是当前聊天单独的授权，每一次调用都会显示在聊天记录里。</div></div>`
+      +(items.length?`<div class="group-label chat-mcp-section-label">MCP 服务器</div><div class="group" id="chatMcpList">${items.map(s=>`<label class="grow chat-mcp-option"><input class="chat-mcp-input" type="checkbox" value="${instructionEsc(s.id)}" ${s.selected?'checked':''}><span class="chat-mcp-name">${instructionEsc(s.name)}</span><span class="chat-mcp-content">${s.transport==='sse'?'SSE':'HTTP'}</span><span class="chat-mcp-check" aria-hidden="true">✓</span></label>`).join('')}</div>`:'<div class="gnote">还没有 MCP 服务器，先去设置里的 MCP 工具添加。</div>')+`<div class="ap-msg" id="chatMcpMsg"></div>`;
     const save = async () => {
       const ids=[...body.querySelectorAll('#chatMcpList input:checked')].map(el=>el.value);
       const home = !!body.querySelector('#chatHomeTodos')?.checked;
