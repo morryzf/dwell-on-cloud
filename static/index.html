@@ -9153,7 +9153,7 @@ function systemLogAction(item) {
   const names = {
     chat_reply:'消息回复', regenerate:'重新生成回复', watch_reply:'观影消息',
     watch_proactive:'观影主动回复', summary_refresh:'更新摘要',
-    memory_card_generation:'生成记忆卡草稿'
+    memory_card_generation:'生成记忆卡草稿', push_delivery:'手机通知'
   };
   return names[item.action] || item.action || '系统请求';
 }
@@ -9186,7 +9186,8 @@ async function loadSystemLogs() {
     body.innerHTML = '<div class="gnote">仅记录请求信息，不保存聊天正文、图片、密钥或请求头。自动保留最近 7 天，最多 1000 条。</div>' +
       '<div class="syslog-toolbar"><select class="ap-in" id="systemLogCategory">' +
       '<option value="">全部类型</option><option value="api_request">界面操作</option>' +
-      '<option value="model_request">消息请求</option><option value="memory_task">记忆任务</option></select>' +
+      '<option value="model_request">消息请求</option><option value="memory_task">记忆任务</option>' +
+      '<option value="push_delivery">手机通知</option></select>' +
       '<select class="ap-in" id="systemLogStatus"><option value="">全部状态</option>' +
       '<option value="running">进行中</option><option value="success">成功</option>' +
       '<option value="error">失败</option><option value="cancelled">已停止</option></select></div>' +
@@ -9313,12 +9314,14 @@ async function turnOnPush() {
     const bytes = new Uint8Array([...raw].map(c => c.charCodeAt(0)));
     const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: bytes });
     const body = Object.assign(JSON.parse(JSON.stringify(sub)), { hello: true });
-    await fetch('api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const response = await fetch('api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const saved = await response.json();
+    if (!response.ok || !saved.ok) throw new Error(saved.detail || '订阅已保存，但测试通知没有发出去');
     pushVal.textContent = '开着';
     note('（门铃通了——刚给你敲了一下，看看手机）');
   } catch (e) {
     pushVal.textContent = '没开成';
-    note('（门铃没装上：' + (e && e.message || '不知道为什么') + '）', 'err');
+    note('（通知没有验证成功：' + (e && e.message || '不知道为什么') + '）', 'err');
   }
 }
 document.getElementById('pushRow').onclick = async () => {

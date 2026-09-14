@@ -10,13 +10,18 @@ import asyncio
 import base64
 import json
 import os
+import re
+import time
 from typing import Any
+from urllib.parse import urlsplit
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from pywebpush import WebPushException, webpush
 
 from . import db
+
+DEFAULT_VAPID_SUBJECT = "https://github.com/morryzf/dwell-on-cloud"
 
 
 def _b64url(raw: bytes) -> str:
@@ -48,6 +53,20 @@ def ensure_vapid_keys() -> tuple[str, str]:
 
 def public_key() -> str:
     return ensure_vapid_keys()[0]
+
+
+def _vapid_subject() -> str:
+    """Return a public contact URI accepted by Apple Push."""
+    configured = os.environ.get("VAPID_SUBJECT", "").strip()
+    if configured:
+        parsed = urlsplit(configured)
+        if parsed.scheme == "https" and parsed.hostname not in {None, "localhost"}:
+            return configured
+        if parsed.scheme == "mailto" and "@" in parsed.path:
+            domain = parsed.path.rsplit("@", 1)[-1].lower()
+            if domain and domain != "localhost" and "." in domain:
+                return configured
+    return DEFAULT_VAPID_SUBJECT
 
 
 def _subscriptions() -> list[dict[str, Any]]:
@@ -104,9 +123,44 @@ def remove_subscription(endpoint: str) -> int:
     return len(items)
 
 
-def _send_sync(title: str, body: str, url: str) -> dict[str, int]:
+def _push_host(subscription: dict[str, Any]) -> str:
+    try:
+        return (urlsplit(str(subscription.get("endpoint") or "")).hostname or "未知主机")[:160]
+    except ValueError:
+        return "无效主机"
+
+
+def _safe_push_failure(subscription: dict[str, Any], exc: Exception) -> dict[str, Any]:
+    response = getattr(exc, "response", None)
+    status = getattr(response, "status_code", None)
+    response_text = str(getattr(response, "text", "") or str(exc) or "").strip()
+    response_text = re.sub(r"https?://\S+", "[地址已隐藏]", response_text)
+    response_text = re.sub(r"[A-Za-z0-9_-]{24,}", "[令牌已隐藏]", response_text)
+    response_text = re.sub(r"\s+", " ", response_text)[:180]
+    return {
+        "host": _push_host(subscription),
+        "status": int(status) if isinstance(status, int) else None,
+        "kind": type(exc).__name__,
+        "reason": response_text,
+    }
+
+
+def _failure_summary(failures: list[dict[str, Any]]) -> str:
+    parts = []
+    for failure in failures[:3]:
+        item = f"主机 {failure['host']}"
+        if failure.get("status"):
+            item += f" · HTTP {failure['status']}"
+        item += f" · {failure['kind']}"
+        if failure.get("reason"):
+            item += f" · {failure['reason']}"
+        parts.append(item)
+    return "；".join(parts)
+
+
+def _send_sync(title: str, body: str, url: str) -> dict[str, Any]:
     _public, private_key = ensure_vapid_keys()
-    subject = os.environ.get("VAPID_SUBJECT", "mailto:dwell@localhost").strip()
+    subject = _vapid_subject()
     payload = json.dumps({
         "title": title[:80] or "Cloudy",
         "body": body[:240],
@@ -116,6 +170,7 @@ def _send_sync(title: str, body: str, url: str) -> dict[str, int]:
     alive: list[dict[str, Any]] = []
     sent = 0
     failed = 0
+    failures: list[dict[str, Any]] = []
     for subscription in subscriptions:
         try:
             webpush(
@@ -129,19 +184,49 @@ def _send_sync(title: str, body: str, url: str) -> dict[str, int]:
             sent += 1
         except WebPushException as exc:
             status = getattr(getattr(exc, "response", None), "status_code", None)
+            failures.append(_safe_push_failure(subscription, exc))
             if status not in {404, 410}:
                 alive.append(subscription)
             failed += 1
-        except Exception:
+        except Exception as exc:
+            failures.append(_safe_push_failure(subscription, exc))
             alive.append(subscription)
             failed += 1
     if alive != subscriptions:
         db.setting_set("push_subscriptions", json.dumps(alive, ensure_ascii=False))
-    return {"sent": sent, "failed": failed, "subscriptions": len(alive)}
+    return {
+        "sent": sent, "failed": failed, "subscriptions": len(alive),
+        "diagnostic": _failure_summary(failures),
+        "status_code": next(
+            (item["status"] for item in failures if item.get("status")), None
+        ),
+    }
 
 
-async def send_push(title: str, body: str, url: str = "/") -> dict[str, int]:
+async def send_push(title: str, body: str, url: str = "/") -> dict[str, Any]:
     """Send without blocking FastAPI's event loop."""
+    started = time.perf_counter()
+    try:
+        log_id = db.system_log_start("push_delivery", "push_delivery")
+    except Exception:
+        log_id = ""
     if not _subscriptions():
-        return {"sent": 0, "failed": 0, "subscriptions": 0}
-    return await asyncio.to_thread(_send_sync, title, body, url)
+        result = {
+            "sent": 0, "failed": 0, "subscriptions": 0,
+            "diagnostic": "服务端没有已保存的手机订阅", "status_code": None,
+        }
+    else:
+        result = await asyncio.to_thread(_send_sync, title, body, url)
+    if log_id:
+        try:
+            db.system_log_finish(
+                log_id, "success" if result["sent"] else "error",
+                round((time.perf_counter() - started) * 1000),
+                status_code=result.get("status_code"),
+                detail=result.get("diagnostic") or (
+                    f"成功发送 {result['sent']} 条；失败 {result['failed']} 条"
+                ),
+            )
+        except Exception:
+            pass
+    return result
