@@ -792,7 +792,10 @@ html[data-theme="dark"] .composer {
     position: relative; display: flex; align-items: center; gap: 10px; width: 100%;
     min-height: 52px; padding: 13px 16px; cursor: pointer;
   }
-  #chatInstructionsBody .ap-section .chat-instruction-option { margin-top: 8px; padding: 10px 0 0; }
+  #chatInstructionsBody .chat-instruction-section-label {
+    padding: 14px 4px 7px; color: var(--dim); font-size: 13px; font-weight: 400; line-height: 1.5;
+  }
+  #chatInstructionsBody .chat-instruction-reply-group { margin-bottom: 20px; }
   #chatInstructionsBody .chat-instruction-input {
     position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none;
   }
@@ -10428,7 +10431,7 @@ async function loadChatInstructions() {
     ]);
     const items = d.items || [];
     body.innerHTML = `<div class="sh-head"><h1>当前聊天的指令</h1><div class="sub">勾选后，下一条消息开始会一起发给模型。</div></div>`
-      + `<div class="ap-section"><div class="ap-section-title">回复方式</div><label class="grow chat-instruction-option"><input class="chat-instruction-input" type="checkbox" id="splitReplies" ${replyStyle.split_replies ? 'checked' : ''}><span class="chat-instruction-name">分条回复</span><span class="chat-instruction-content">按自然空行自动拆开</span><span class="chat-instruction-check" aria-hidden="true">✓</span></label></div>`
+      + `<div class="group-label chat-instruction-section-label">回复方式</div><div class="group chat-instruction-reply-group"><label class="grow chat-instruction-option"><input class="chat-instruction-input" type="checkbox" id="splitReplies" ${replyStyle.split_replies ? 'checked' : ''}><span class="chat-instruction-name">分条回复</span><span class="chat-instruction-content">按自然空行自动拆开</span><span class="chat-instruction-check" aria-hidden="true">✓</span></label></div>`
       + (items.length ? `<div class="group" id="chatInstructionList">${items.map(item => `<label class="grow chat-instruction-option"><input class="chat-instruction-input" type="checkbox" value="${instructionEsc(item.id)}" ${item.selected ? 'checked' : ''}><span class="chat-instruction-name">${instructionEsc(item.name)}</span><span class="chat-instruction-content">${instructionEsc(item.content).slice(0, 28)}${item.content.length > 28 ? '…' : ''}</span><span class="chat-instruction-check" aria-hidden="true">✓</span></label>`).join('')}</div>` : '<div class="gnote">还没有可用指令。先去设置里写一条。</div>')
       + `<div class="ap-btns single"><button class="ap-b" id="openInstructionSettings">管理指令</button></div><div class="ap-msg" id="chatInstructionMsg"></div>`;
     const save = async () => {
