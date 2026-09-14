@@ -786,6 +786,33 @@ html[data-theme="dark"] .composer {
   .group .grow .chev { color: var(--dim); font-size: 14px; }
   .group .grow .val + .chev { margin-left: 6px; }
   .group .grow:not(.static):active { background: rgba(0,0,0,.04); }
+
+  /* 当前聊天指令：隐藏系统蓝色勾选，保留原生 checkbox 语义与整行触控区域 */
+  #chatInstructionsBody .chat-instruction-option {
+    position: relative; display: flex; align-items: center; gap: 10px; width: 100%;
+    min-height: 52px; padding: 13px 16px; cursor: pointer;
+  }
+  #chatInstructionsBody .ap-section .chat-instruction-option { margin-top: 8px; padding: 10px 0 0; }
+  #chatInstructionsBody .chat-instruction-input {
+    position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none;
+  }
+  #chatInstructionsBody .chat-instruction-name {
+    flex: none; color: var(--text); font-size: 15px; font-weight: 500; line-height: 1.5;
+  }
+  #chatInstructionsBody .chat-instruction-content {
+    min-width: 0; margin-left: auto; overflow: hidden; color: var(--dim);
+    font-size: 13px; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #chatInstructionsBody .chat-instruction-check {
+    flex: none; width: 14px; color: var(--accent); font-size: 12px;
+    font-weight: 800; line-height: 1; opacity: 0; text-align: right;
+  }
+  #chatInstructionsBody .chat-instruction-input:checked + .chat-instruction-name { color: var(--accent); }
+  #chatInstructionsBody .chat-instruction-input:checked ~ .chat-instruction-check { opacity: 1; }
+  #chatInstructionsBody .chat-instruction-option:has(.chat-instruction-input:focus-visible) {
+    outline: 2px solid var(--accent-soft); outline-offset: -3px;
+  }
+
   .gnote { font-size: 13.5px; color: var(--dim); padding: 12px 6px 0; line-height: 1.6; }
 
   /* 模型供应商 / MCP：两个设置页共用的表单骨架 */
@@ -10401,8 +10428,8 @@ async function loadChatInstructions() {
     ]);
     const items = d.items || [];
     body.innerHTML = `<div class="sh-head"><h1>当前聊天的指令</h1><div class="sub">勾选后，下一条消息开始会一起发给模型。</div></div>`
-      + `<div class="ap-section"><div class="ap-section-title">回复方式</div><label class="grow"><input type="checkbox" id="splitReplies" ${replyStyle.split_replies ? 'checked' : ''}> <span>分条回复</span><span class="val">按自然空行自动拆开</span></label></div>`
-      + (items.length ? `<div class="group" id="chatInstructionList">${items.map(item => `<label class="grow"><input type="checkbox" value="${instructionEsc(item.id)}" ${item.selected ? 'checked' : ''}> <span>${instructionEsc(item.name)}</span><span class="val">${instructionEsc(item.content).slice(0, 28)}${item.content.length > 28 ? '…' : ''}</span></label>`).join('')}</div>` : '<div class="gnote">还没有可用指令。先去设置里写一条。</div>')
+      + `<div class="ap-section"><div class="ap-section-title">回复方式</div><label class="grow chat-instruction-option"><input class="chat-instruction-input" type="checkbox" id="splitReplies" ${replyStyle.split_replies ? 'checked' : ''}><span class="chat-instruction-name">分条回复</span><span class="chat-instruction-content">按自然空行自动拆开</span><span class="chat-instruction-check" aria-hidden="true">✓</span></label></div>`
+      + (items.length ? `<div class="group" id="chatInstructionList">${items.map(item => `<label class="grow chat-instruction-option"><input class="chat-instruction-input" type="checkbox" value="${instructionEsc(item.id)}" ${item.selected ? 'checked' : ''}><span class="chat-instruction-name">${instructionEsc(item.name)}</span><span class="chat-instruction-content">${instructionEsc(item.content).slice(0, 28)}${item.content.length > 28 ? '…' : ''}</span><span class="chat-instruction-check" aria-hidden="true">✓</span></label>`).join('')}</div>` : '<div class="gnote">还没有可用指令。先去设置里写一条。</div>')
       + `<div class="ap-btns single"><button class="ap-b" id="openInstructionSettings">管理指令</button></div><div class="ap-msg" id="chatInstructionMsg"></div>`;
     const save = async () => {
       const ids = [...body.querySelectorAll('#chatInstructionList input:checked')].map(el => el.value);
