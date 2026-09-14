@@ -1,6 +1,6 @@
 # dwell backend
 
-我们家的后端。聊天、日记、待办、日历、悄悄话，也包括 Cloudy 的书房。
+一个前端。聊天、番茄钟、自主消息等，也包括模型的书房。
 
 - 前端：`static/index.html`（来自 dwell-on-something，PolyForm Noncommercial）
 - 数据：SQLite，落在 `DWELL_DB` 指定的路径
