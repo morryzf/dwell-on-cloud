@@ -3249,6 +3249,21 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   .mc-topic input:checked + span { border-color: var(--accent-soft); background: color-mix(in srgb, var(--accent-soft) 18%, var(--card)); color: var(--text); font-weight: 650; }
   .mc-topic input:focus-visible + span { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
   .mc-section-title { margin: 19px 3px 8px; color: var(--dim); font-size: 12px; letter-spacing: .1em; }
+  /* 设置、摘要两页不套卡片：段落之间一条细线隔开，说明就是一行小字。
+     只有「正在使用的正式摘要」还留着框——那是要改的正文，得和说明分开。 */
+  #longContextSheet .mc-flat .ap-section:not(.mc-keep-box) {
+    background: none !important; border: 0 !important; border-radius: 0 !important;
+    box-shadow: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+    margin: 0 !important; padding: 16px 2px !important;
+  }
+  #longContextSheet .mc-flat .ap-section:not(.mc-keep-box) + .ap-section:not(.mc-keep-box) {
+    border-top: 1px solid var(--line) !important;
+  }
+  #longContextSheet .mc-flat .ap-section:not(.mc-keep-box) .gnote {
+    background: none; border-radius: 0; margin: 4px 0 0; padding: 0; font-size: 12.5px; line-height: 1.6;
+  }
+  #longContextSheet .mc-flat .ap-section:not(.mc-keep-box) .gnote::before { display: none; }
+  #longContextSheet .mc-flat .mc-keep-box { margin-top: 18px; }
   .mc-summary textarea { width: 100%; min-height: 230px; box-sizing: border-box; resize: vertical; }
   #longContextDraft, #longContextOverview { font-size: 14px; line-height: 1.55; }
   .mc-summary-history-text { font-size: 12.5px; line-height: 1.55; }
@@ -10860,7 +10875,7 @@ function memorySummaryHtml(state) {
   return `<div class="ap-section"><div class="ap-section-title">状态</div><div class="gnote">${instructionEsc(status)}</div><div class="gnote">原消息 ${state.message_count} 条 · 已压缩 ${state.segment_count} 段 · 最近 ${state.tail_messages} 条保留原文</div><div class="gnote">正式摘要最近保存：${instructionEsc(generated)}</div></div>
     <div class="mc-actions${state.enabled ? ' mc-summary-primary-actions' : ''}"><button class="mc-btn primary" id="longContextGenerate" ${blocked ? 'disabled' : ''}>${reviewing ? '先处理待确认摘要' : (state.overview ? '更新摘要' : '生成摘要')}</button>${state.enabled ? `<button class="mc-btn" id="longContextRebuild" ${blocked ? 'disabled' : ''}>从原文重建</button>` : ''}</div><div class="ap-msg" id="longContextMsg"></div>
     ${reviewing ? `<div class="ap-section mc-summary"><div class="ap-section-title">待确认的新摘要</div><div class="gnote">生成于 ${instructionEsc(draftGenerated)}。采用前不会影响正式摘要。</div><textarea class="ap-in" id="longContextDraft" maxlength="12000">${instructionEsc(state.draft_overview || '')}</textarea><div class="mc-actions"><button class="mc-btn primary" id="longContextAccept">采用这份摘要</button><button class="mc-btn quiet danger" id="longContextDiscard">丢弃</button></div></div>` : ''}
-    ${state.overview ? `<div class="ap-section mc-summary"><div class="ap-section-title">正在使用的正式摘要</div><div class="gnote">可以直接校订；保存前会自动留下旧版本。</div><textarea class="ap-in" id="longContextOverview" maxlength="12000">${instructionEsc(state.overview)}</textarea><div class="mc-actions"><button class="mc-btn primary" id="longContextSave">保存修改</button></div></div>` : ''}
+    ${state.overview ? `<div class="ap-section mc-summary mc-keep-box"><div class="ap-section-title">正在使用的正式摘要</div><div class="gnote">可以直接校订；保存前会自动留下旧版本。</div><textarea class="ap-in" id="longContextOverview" maxlength="12000">${instructionEsc(state.overview)}</textarea><div class="mc-actions"><button class="mc-btn primary" id="longContextSave">保存修改</button></div></div>` : ''}
     ${versions ? `<div class="ap-section"><div class="ap-section-title">摘要历史（${state.version_count || 0}）</div>${versions}</div>` : ''}`;
 }
 
@@ -10980,7 +10995,7 @@ async function loadLongContext(quiet) {
     if(memoryConsoleTab==='review') panel=`<div class="mc-toolbar mc-review-actions"><button class="mc-btn primary" id="memoryGenerate" ${cardWorking?'disabled':''}>${cardWorking?'正在整理…':'生成未处理分段的记忆卡草稿'}</button>${drafts.length?`<div class="mc-pair"><button class="mc-btn" id="memoryAcceptAll" ${cardWorking?'disabled':''}>采用全部（${drafts.length}）</button><button class="mc-btn quiet danger" id="memoryDiscardAll" ${cardWorking?'disabled':''}>全部忽略（${drafts.length}）</button></div>`:''}</div>${cards.state&&cards.state.error?`<div class="ap-msg on bad">${instructionEsc(cards.state.error)}</div>`:''}${(cards.state&&cards.state.note&&!cards.state.error)?`<div class="ap-msg on">${instructionEsc(cards.state.note)}</div>`:''}${drafts.length?`<div class="mc-stack">${drafts.map(item=>memoryCardView(item,cards.taxonomy,'draft',null,cardById)).join('')}</div>`:memoryEmpty(cardWorking?'正在整理候选':'没有待确认内容',cardWorking?'完成后会自动出现在这里。':'可以让模型检查尚未处理的新分段；任何候选都要由你逐条采用。')}`;
     if(memoryConsoleTab==='cards') panel=`${(()=>{ const lastUse=cards.last_injection; if(!lastUse||!(lastUse.items||[]).length) return ''; /* 最近一次带入是「结果」不是设置：放记忆卡顶上，折叠着不挡翻卡 */ return `<details class="mc-used-fold"><summary>最近一次带入 · ${instructionEsc(memoryDate(lastUse.used_at))} · ${lastUse.items.length} 条</summary><div class="mc-stack mc-used-scroll" style="margin-top:10px">${lastUse.items.map(item=>memoryCardView(item,cards.taxonomy,'used')).join('')}</div></details>`; })()}<div class="mc-toolbar"><input class="ap-in" id="memorySearch" type="search" placeholder="搜索记忆内容" value="${instructionEsc(memoryConsoleQuery)}"><select class="ap-in" id="memoryFilter"><option value="all">全部状态</option><option value="active" ${memoryConsoleFilter==='active'?'selected':''}>可被挑选</option><option value="hidden" ${memoryConsoleFilter==='hidden'?'selected':''}>已隐藏</option><option value="high" ${memoryConsoleFilter==='high'?'selected':''}>固定保留</option><option value="archived" ${memoryConsoleFilter==='archived'?'selected':''}>已归档（${archived.length}）</option></select></div>${(active.length||archived.length)?`<div class="mc-stack">${active.concat(archived).map(item=>memoryCardView(item,cards.taxonomy,'card',recentIds)).join('')}</div><div class="mc-empty" id="memoryFilteredEmpty" hidden><strong>没有符合条件的记忆</strong>换个关键词或筛选条件看看。</div>`:memoryEmpty('还没有正式记忆卡','先到“待确认”生成候选，并逐条采用。')}`;
     
-    body.innerHTML=`<div class="mc-intro"><h1>${instructionEsc(chat.name||'新对话')}</h1><p>记忆卡把重要细节拆成可以管理的小条目；摘要维持对话的连续性。</p><div class="mc-safety${cards.injection_enabled?'':' off'}"><span class="ic" data-i="${cards.injection_enabled?'check':'x'}"></span><span>${cards.injection_enabled?'按需记忆已开启：每轮最多带入 5 条相关卡片；隐藏、归档和过期内容会自动排除。':'按需记忆已暂停：AI 仍会看到长期摘要和最近原文，但不会看到记忆卡。'}</span></div></div><div class="mc-tabs" role="tablist" aria-label="记忆管理">${tabHtml}</div><section class="mc-panel" role="tabpanel">${panel}</section>`;
+    body.innerHTML=`<div class="mc-intro"><h1>${instructionEsc(chat.name||'新对话')}</h1><p>记忆卡把重要细节拆成可以管理的小条目；摘要维持对话的连续性。</p><div class="mc-safety${cards.injection_enabled?'':' off'}"><span class="ic" data-i="${cards.injection_enabled?'check':'x'}"></span><span>${cards.injection_enabled?'按需记忆已开启：每轮最多带入 5 条相关卡片；隐藏、归档和过期内容会自动排除。':'按需记忆已暂停：AI 仍会看到长期摘要和最近原文，但不会看到记忆卡。'}</span></div></div><div class="mc-tabs" role="tablist" aria-label="记忆管理">${tabHtml}</div><section class="mc-panel${(memoryConsoleTab==='summary'||memoryConsoleTab==='settings')?' mc-flat':''}" role="tabpanel">${panel}</section>`;
     if(quiet) body.scrollTop=keepScroll;
     fillIcons(body);
     body.querySelectorAll('[data-memory-tab]').forEach(button=>button.onclick=()=>{memoryConsoleTab=button.dataset.memoryTab;loadLongContext();});
