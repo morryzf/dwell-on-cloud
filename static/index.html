@@ -3641,19 +3641,19 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   :root {
     --rim-w: .5px;
     --rim-base: rgba(150,110,128,.20);
-    --rim-hi: rgba(255,255,255,.95);
-    --rim-lo: rgba(255,255,255,.55);
+    --rim-hi: rgba(255,255,255,.85);
+    --rim-lo: rgba(255,255,255,.68);
   }
   html[data-theme="dark"] {
     --rim-base: rgba(255,235,244,.13);
-    --rim-hi: rgba(255,240,247,.62);
-    --rim-lo: rgba(255,240,247,.30);
+    --rim-hi: rgba(255,240,247,.54);
+    --rim-lo: rgba(255,240,247,.40);
   }
   @media (prefers-color-scheme: dark) {
     html:not([data-theme="light"]) {
       --rim-base: rgba(255,235,244,.13);
-      --rim-hi: rgba(255,240,247,.62);
-      --rim-lo: rgba(255,240,247,.30);
+      --rim-hi: rgba(255,240,247,.54);
+      --rim-lo: rgba(255,240,247,.40);
     }
   }
   #log .bubble { --rim-w: var(--msg-me-border-width, 1px); --rim-base: var(--msg-me-border, rgba(255,255,255,.42)); }
