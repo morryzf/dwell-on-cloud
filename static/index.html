@@ -2715,6 +2715,64 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     backdrop-filter: blur(18px) saturate(1.35);
     box-shadow: 0 6px 18px rgba(79,53,66,.08), inset 0 1px rgba(255,255,255,.18) !important;
   }
+  /* ── Range slider: strip browser chrome, draw a glass-matching track + thumb ── */
+  input[type="range"].ap-in {
+    -webkit-appearance: none; appearance: none;
+    border: 1px solid rgba(158,112,133,.15) !important;
+    outline: 0 !important;
+    padding: 0 2px; min-height: 36px; height: 36px;
+    background: rgba(255,255,255,.22) !important;
+    box-shadow: 0 4px 13px rgba(86,58,71,.045), inset 0 1px rgba(255,255,255,.14) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.25);
+    backdrop-filter: blur(18px) saturate(1.25);
+    cursor: pointer;
+  }
+  input[type="range"].ap-in:focus { box-shadow: 0 4px 13px rgba(86,58,71,.045), inset 0 1px rgba(255,255,255,.14) !important; }
+  input[type="range"].ap-in::-webkit-slider-runnable-track {
+    height: 5px; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent) var(--range-pct, 0%), rgba(158,112,133,.13) var(--range-pct, 0%));
+  }
+  input[type="range"].ap-in::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #e8b4c4;
+    border: 2px solid rgba(255,255,255,.7);
+    box-shadow: 0 2px 8px rgba(140,85,108,.22), inset 0 1px rgba(255,255,255,.4);
+    margin-top: -8.5px;
+  }
+  input[type="range"].ap-in::-moz-range-track {
+    height: 5px; border-radius: 3px; border: 0;
+    background: rgba(158,112,133,.13);
+  }
+  input[type="range"].ap-in::-moz-range-progress {
+    height: 5px; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+  }
+  input[type="range"].ap-in::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7);
+    background: #e8b4c4;
+    box-shadow: 0 2px 8px rgba(140,85,108,.22), inset 0 1px rgba(255,255,255,.4);
+  }
+  html[data-theme="dark"] input[type="range"].ap-in {
+    background: rgba(255,235,244,.09) !important;
+    border-color: rgba(242,201,220,.12) !important;
+  }
+  html[data-theme="dark"] input[type="range"].ap-in::-webkit-slider-runnable-track { background: linear-gradient(90deg, var(--accent) var(--range-pct, 0%), rgba(255,220,235,.10) var(--range-pct, 0%)); }
+  html[data-theme="dark"] input[type="range"].ap-in::-webkit-slider-thumb {
+    background: #c08a9c;
+    border-color: rgba(255,235,244,.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) input[type="range"].ap-in {
+      background: rgba(255,235,244,.09) !important;
+      border-color: rgba(242,201,220,.12) !important;
+    }
+    html:not([data-theme="light"]) input[type="range"].ap-in::-webkit-slider-runnable-track { background: linear-gradient(90deg, var(--accent) var(--range-pct, 0%), rgba(255,220,235,.10) var(--range-pct, 0%)); }
+    html:not([data-theme="light"]) input[type="range"].ap-in::-webkit-slider-thumb {
+      background: #c08a9c;
+      border-color: rgba(255,235,244,.35);
+    }
+  }
   #backgroundOverlay { accent-color: var(--accent); }
   .lk-time {
     position: relative;
@@ -10124,7 +10182,12 @@ function renderChatBackgroundSettings() {
   const message = body.querySelector('#backgroundMsg');
   const overlayInput = body.querySelector('#backgroundOverlay');
   const overlayValue = body.querySelector('#backgroundOverlayVal');
-  overlayInput.oninput = () => { overlayValue.textContent = applyChatBackgroundOverlay(overlayInput.value, true) + '%'; };
+  function paintRangeFill(inp) {
+    var pct = (inp.value - inp.min) / (inp.max - inp.min) * 100;
+    inp.style.setProperty('--range-pct', pct + '%');
+  }
+  overlayInput.oninput = () => { overlayValue.textContent = applyChatBackgroundOverlay(overlayInput.value, true) + '%'; paintRangeFill(overlayInput); };
+  paintRangeFill(overlayInput);
   body.querySelector('#backgroundChoose').onclick = () => input.click();
   input.onchange = async () => {
     const file = input.files && input.files[0]; if (!file) return;
