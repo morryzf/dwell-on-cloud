@@ -24,7 +24,7 @@ class InlineTextAttachmentsTest(unittest.TestCase):
             {"kind": "text", "name": "笔记.md", "text": "# 标题\n正文"},
         ])
 
-        self.assertEqual(files, [{"name": "笔记.md", "text": "# 标题\n正文"}])
+        self.assertEqual(files, [{"name": "笔记.md", "text": "# 标题\n正文", "truncated": False}])
 
     def test_images_and_files_come_out_of_the_same_list(self):
         raw = [IMAGE, {"kind": "text", "name": "a.txt", "text": "内容"}]

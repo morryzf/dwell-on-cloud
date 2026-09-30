@@ -25,7 +25,7 @@ import httpx
 from fastapi import Body, Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
-from . import auth, db, provider_secrets, push_service, study
+from . import auth, db, file_text, provider_secrets, push_service, study
 from app.pet_assets import ensure_pet_assets
 from app.llm_client import prompt_cache_enabled, stream_chat
 from app.mcp_client import McpConnectionError, call_tool as mcp_call_tool, list_tools as mcp_list_tools
@@ -3987,9 +3987,93 @@ def _inline_text_attachments(raw: object) -> list[dict]:
         if not text.strip():
             continue
         # 文件名会原样出现在给模型的提示里，去掉控制字符免得把结构搅乱。
-        name = re.sub(r"[\x00-\x1f\x7f]", "", str(item.get("name") or "")).strip()[:120]
-        files.append({"name": name or "未命名文件", "text": text[:TEXT_ATTACHMENT_CHARS]})
+        files.append({"name": _clean_file_name(item.get("name")),
+                      "text": text[:TEXT_ATTACHMENT_CHARS],
+                      "truncated": len(text) > TEXT_ATTACHMENT_CHARS})
     return files
+
+
+def _clean_file_name(raw: object) -> str:
+    # 文件名会原样出现在给模型的提示里，去掉控制字符免得把结构搅乱。
+    name = re.sub(r"[\x00-\x1f\x7f]", "", str(raw or "")).strip()[:120]
+    return name or "未命名文件"
+
+
+def _uploaded_text_attachments(raw: object) -> list[dict]:
+    """取出大文件那条路先传上来、已经读成文字的那几份。"""
+    if not isinstance(raw, list):
+        return []
+    ids = [str(item.get("id") or "") for item in raw
+           if isinstance(item, dict) and item.get("kind") == "upload"]
+    return [
+        {"name": row["name"], "text": row["text"], "truncated": bool(row["truncated"])}
+        for row in db.pending_upload_take(ids[:TEXT_ATTACHMENT_MAX])
+    ]
+
+
+UPLOAD_MAX_BYTES = 30 * 1024 * 1024
+UPLOAD_CHUNK_MAX = 5 * 1024 * 1024
+UPLOAD_DIR = Path(tempfile.gettempdir()) / "dwell-uploads"
+_upload_parts: dict[str, dict] = {}
+
+
+def _upload_prune(now: float) -> None:
+    """传了一半就没下文的，一小时后清掉。"""
+    for upload_id, part in list(_upload_parts.items()):
+        if now - part["at"] > 3600:
+            _upload_parts.pop(upload_id, None)
+            Path(part["path"]).unlink(missing_ok=True)
+
+
+@app.post("/api/upload", dependencies=authed)
+async def upload_chunk(request: Request, name: str = "", idx: int = 0, done: int = 0, id: str = ""):
+    """大文件分块传上来，传完读成文字暂存，等下一条消息一起发给模型。
+
+    原文件读完就删；模型看的只是文字，跟小文本文件走同一条路。
+    """
+    chunk = await request.body()
+    if len(chunk) > UPLOAD_CHUNK_MAX:
+        raise HTTPException(413, "这一块太大了")
+    now = time.time()
+    _upload_prune(now)
+    if idx == 0:
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        upload_id = uuid.uuid4().hex
+        part = {"path": str(UPLOAD_DIR / upload_id), "next": 0, "size": 0,
+                "name": _clean_file_name(name), "at": now}
+        _upload_parts[upload_id] = part
+    else:
+        upload_id = id
+        part = _upload_parts.get(upload_id)
+        if not part:
+            raise HTTPException(404, "这次上传已经断了，重新选一下文件")
+    if idx != part["next"]:
+        raise HTTPException(409, "分块顺序乱了，重新选一下文件")
+    part["size"] += len(chunk)
+    if part["size"] > UPLOAD_MAX_BYTES:
+        _upload_parts.pop(upload_id, None)
+        Path(part["path"]).unlink(missing_ok=True)
+        raise HTTPException(413, "文件太大了，最多 30MB")
+    with open(part["path"], "ab") as handle:
+        handle.write(chunk)
+    part["next"] += 1
+    part["at"] = now
+    if not done:
+        return {"ok": True, "id": upload_id}
+
+    _upload_parts.pop(upload_id, None)
+    path = Path(part["path"])
+    try:
+        data = path.read_bytes()
+        text = await asyncio.to_thread(file_text.extract_text, part["name"], data)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    finally:
+        path.unlink(missing_ok=True)
+    truncated = len(text) > TEXT_ATTACHMENT_CHARS
+    row = db.pending_upload_add(part["name"], text[:TEXT_ATTACHMENT_CHARS], part["size"], truncated)
+    return {"ok": True, "id": row["id"], "name": row["name"],
+            "chars": len(row["text"]), "truncated": truncated}
 
 
 def _text_attachment_block(files: list[dict]) -> str:
@@ -3999,6 +4083,8 @@ def _text_attachment_block(files: list[dict]) -> str:
         parts.append(
             "【附件：" + item["name"] + "】\n"
             + "以下是用户随这条消息发来的文件内容，不是用户对你说的话。\n"
+            + ("（文件太长，这里只放了开头 " + str(len(item["text"])) + " 个字。）\n"
+               if item.get("truncated") else "")
             + item["text"]
         )
     return "\n\n".join(parts)
@@ -4572,7 +4658,8 @@ async def send(request: Request):
     payload = await _read_json(request)
     text = str(payload.get("text", "")).strip()
     attachments = _inline_image_attachments(payload.get("attachments"))
-    text_files = _inline_text_attachments(payload.get("attachments"))
+    text_files = (_inline_text_attachments(payload.get("attachments"))
+                  + _uploaded_text_attachments(payload.get("attachments")))[:TEXT_ATTACHMENT_MAX]
     device_time = _device_time_context(payload.get("device_time"))
     focus_context = _focus_context(payload.get("focus_context"))
     if not text and not attachments and not text_files:
