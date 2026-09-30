@@ -3660,6 +3660,15 @@ async def memory_card_drafts_accept_all(chat_id: str):
     }
 
 
+@app.post("/api/chats/{chat_id}/memory-card-drafts/discard-all", dependencies=authed)
+async def memory_card_drafts_discard_all(chat_id: str):
+    """一口气忽略全部待确认——比如分支把旧历史重出了一整批重复的卡。"""
+    if not db.chat_get(chat_id):
+        raise HTTPException(404, "chat 不存在")
+    discarded = db.memory_card_drafts_discard_all(chat_id)
+    return {"ok": True, "discarded": discarded, "state": _memory_card_review_state(chat_id)}
+
+
 @app.post("/api/chats/{chat_id}/memory-card-drafts/{draft_id}/accept", dependencies=authed)
 async def memory_card_draft_accept(chat_id: str, draft_id: str, request: Request):
     if not db.chat_get(chat_id):
