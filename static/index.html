@@ -3658,6 +3658,10 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   }
   #log .bubble { --rim-w: var(--msg-me-border-width, 1px); --rim-base: var(--msg-me-border, rgba(255,255,255,.42)); }
   #log .gu { --rim-w: var(--msg-cloudy-border-width, 1px); --rim-base: var(--msg-cloudy-border, rgba(255,255,255,.42)); }
+  /* 「气泡样式」里的预览要和聊天里的气泡一模一样，边也一起画。 */
+  .msg-preview-me { --rim-w: var(--msg-me-border-width, 1px); --rim-base: var(--msg-me-border, rgba(255,255,255,.42)); --glass-border: var(--msg-me-border-width, 1px); }
+  .msg-preview-cloudy { --rim-w: var(--msg-cloudy-border-width, 1px); --rim-base: var(--msg-cloudy-border, rgba(255,255,255,.42)); --glass-border: var(--msg-cloudy-border-width, 1px); }
+  .msg-preview-me, .msg-preview-cloudy { position: relative; border-color: transparent !important; }
   #log .gu, #log .bubble, header .iconbtn, .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill),
   .sheet .group, .sheet .ap-section:not(#longContextSheet .mc-flat .ap-section:not(.mc-keep-box)), .mc-card {
     position: relative;
@@ -3669,7 +3673,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   #log .gu::before, #log .bubble::before, .composer::before, header .iconbtn::before,
   .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill)::before,
   .sheet .group::before, .sheet .ap-section:not(#longContextSheet .mc-flat .ap-section:not(.mc-keep-box))::before,
-  .menuCard::before, .mc-card::before {
+  .menuCard::before, .mc-card::before, .msg-preview-me::before, .msg-preview-cloudy::before {
     content: ''; position: absolute; pointer-events: none; z-index: 1;
     inset: calc(-1 * var(--glass-border, 1px)); border-radius: inherit;
     padding: var(--rim-w);
