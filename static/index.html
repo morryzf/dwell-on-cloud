@@ -3637,6 +3637,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
      原来的立体感是在顶上多叠一条 1px 白线：顶边 2px、底边 1px，看着上粗下细。
      现在四边一样细，立体感只靠亮度：左上最亮、往两边淡到几乎看不见，右下再亮起一段
      （弱一些）——光从左上来，对角有一段回光。画在 ::before 上、只露出边框那一圈。
+     只用在气泡和输入框（连同里面那排按钮）上；别处的卡片、按钮就是一圈均匀的边。
      --rim-w 边宽、--rim-base 那圈均匀的底色；气泡的这两样跟着「气泡样式」里的设置走。 */
   :root {
     --rim-w: .5px;
@@ -3662,18 +3663,14 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   .msg-preview-me { --rim-w: var(--msg-me-border-width, 1px); --rim-base: var(--msg-me-border, rgba(255,255,255,.42)); --glass-border: var(--msg-me-border-width, 1px); }
   .msg-preview-cloudy { --rim-w: var(--msg-cloudy-border-width, 1px); --rim-base: var(--msg-cloudy-border, rgba(255,255,255,.42)); --glass-border: var(--msg-cloudy-border-width, 1px); }
   .msg-preview-me, .msg-preview-cloudy { position: relative; border-color: transparent !important; }
-  #log .gu, #log .bubble, header .iconbtn, .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill),
-  .sheet .group, .sheet .ap-section:not(#longContextSheet .mc-flat .ap-section:not(.mc-keep-box)), .mc-card {
+  #log .gu, #log .bubble, .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill) {
     position: relative;
   }
-  #log .gu, #log .bubble, .composer, header .iconbtn, .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill),
-  .sheet .group, .sheet .ap-section:not(#longContextSheet .mc-flat .ap-section:not(.mc-keep-box)), .menuCard, .mc-card {
+  #log .gu, #log .bubble, .composer, .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill) {
     border-color: transparent !important;
   }
-  #log .gu::before, #log .bubble::before, .composer::before, header .iconbtn::before,
-  .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill)::before,
-  .sheet .group::before, .sheet .ap-section:not(#longContextSheet .mc-flat .ap-section:not(.mc-keep-box))::before,
-  .menuCard::before, .mc-card::before, .msg-preview-me::before, .msg-preview-cloudy::before {
+  #log .gu::before, #log .bubble::before, .composer::before, .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill)::before,
+  .msg-preview-me::before, .msg-preview-cloudy::before {
     content: ''; position: absolute; pointer-events: none; z-index: 1;
     inset: calc(-1 * var(--glass-border, 1px)); border-radius: inherit;
     padding: var(--rim-w);
@@ -3684,16 +3681,25 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   }
-  /* 设置面板里的分组卡片自己带 overflow:hidden，画在外沿那 1px 的边会被自己裁掉——
-     去掉那 1px 透明边框，把这圈边画在卡片里面。 */
-  .sheet .group { border-width: 0 !important; --glass-border: 0px; }
   /* 本身没有边框的按钮，这圈边就画在它自己的边上 */
-  header .iconbtn, .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill) { --glass-border: 0px; }
+  .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill) { --glass-border: 0px; }
   #log .bubble::before { inset: calc(-1 * var(--msg-me-border-width, 1px)); }
   #log .gu::before { inset: calc(-1 * var(--msg-cloudy-border-width, 1px)); }
   /* 表单控件画不了 ::before，只留一圈均匀的细边，不再顶上加亮线。 */
   .ap-in { border-color: var(--rim-base) !important; }
 
+  /* 已保存的供应商、聊天指令：列表里行与行之间的线细一半（0.5px）。
+     用 inset 阴影画：0.5px 的 border 有的浏览器会取整成 1px。 */
+  #apProviderList .grow + .grow, #instructionsBody .group .grow + .grow {
+    border-top: 0 !important; box-shadow: inset 0 .5px 0 var(--line) !important;
+  }
+  /* 聊天背景的遮罩滑块：去掉滑块外面那一小圈框，只留轨道和圆钮。 */
+  input[type="range"].ap-in,
+  html[data-theme="dark"] input[type="range"].ap-in,
+  html:not([data-theme="light"]) input[type="range"].ap-in {
+    border: 0 !important; background: transparent !important; box-shadow: none !important;
+    -webkit-backdrop-filter: none !important; backdrop-filter: none !important; padding: 0 !important;
+  }
   /* 设置、心跳：同一组里的行与行之间不画分隔线，靠间距分开。 */
   #settingsSheet .group .grow + .grow, #heartbeatSheet .group .grow + .grow { border-top: 0 !important; }
   /* 心跳：卡片和输入框原来各自又叠一层模糊。套在已经模糊的面板里，手机上里层只能
@@ -3858,7 +3864,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   </div>
 </div>
 
-<div class="sheetWrap" id="settingsSheet">
+<div class="sheetWrap page" id="settingsSheet">
   <div class="shade" data-close="settings"></div>
   <div class="sheet">
     <div class="head">
