@@ -5,6 +5,7 @@
 
 import copy
 import json
+import re
 from urllib.parse import urlparse
 
 import httpx
@@ -558,25 +559,53 @@ async def _stream_openai(client, provider: dict, api_key: str, model_id: str,
                          reasoning_effort: str | None, thinking_enabled: bool,
                          session_id: str | None, fallback_reason: str = ""):
     url = provider["base_url"].rstrip("/") + "/chat/completions"
-    payload = build_chat_payload(
-        model_id, messages, tools, max_tokens=max_tokens,
-        reasoning_effort=reasoning_effort, thinking_enabled=thinking_enabled,
-        provider=provider, session_id=session_id,
-    )
     headers = {"Authorization": f"Bearer {api_key}", "Accept": "text/event-stream"}
-    async with client.stream("POST", url, headers=headers, json=payload) as resp:
-        if resp.status_code != 200:
-            body = (await resp.aread()).decode("utf-8", errors="ignore")[:500]
-            yield {"type": "text", "text": f"[供应商错误 {resp.status_code}] {body}"}
+    for attempt in range(2):
+        payload = build_chat_payload(
+            model_id, messages, tools, max_tokens=max_tokens,
+            reasoning_effort=reasoning_effort, thinking_enabled=thinking_enabled,
+            provider=provider, session_id=session_id,
+        )
+        async with client.stream("POST", url, headers=headers, json=payload) as resp:
+            if resp.status_code != 200:
+                body = (await resp.aread()).decode("utf-8", errors="ignore")
+                affordable = _affordable_tokens(resp.status_code, body)
+                # 没写上限时 OpenRouter 按模型最大输出（Opus 是 65536）预扣余额，
+                # 余额差一点就整轮失败。它会说「只够 N 个」——那就按 N 再要一次。
+                if (affordable is not None and attempt == 0
+                        and affordable >= AFFORDABLE_RETRY_MIN
+                        and (max_tokens is None or affordable < max_tokens)):
+                    max_tokens = affordable
+                    continue
+                if affordable is not None:
+                    yield {"type": "text", "text": (
+                        f"[供应商错误 402] OpenRouter 余额快用完了，只够再生成大约 {affordable} 个 token，"
+                        "回不了这一条。去 https://openrouter.ai/settings/credits 充值后再试。"
+                    )}
+                    return
+                yield {"type": "text", "text": f"[供应商错误 {resp.status_code}] {body[:500]}"}
+                return
+            yield {
+                "type": "cache_status",
+                "protocol": "openai_compatible",
+                "auth_mode": "bearer",
+                "fallback_reason": fallback_reason,
+            }
+            async for event in _openai_response_events(resp):
+                yield event
             return
-        yield {
-            "type": "cache_status",
-            "protocol": "openai_compatible",
-            "auth_mode": "bearer",
-            "fallback_reason": fallback_reason,
-        }
-        async for event in _openai_response_events(resp):
-            yield event
+
+
+# 余额只够这么点时就别硬回了，回出来也是半句话。
+AFFORDABLE_RETRY_MIN = 2000
+
+
+def _affordable_tokens(status: int, body: str) -> int | None:
+    """从 OpenRouter 的 402 里读出「只够 N 个 token」；不是这种错就返回 None。"""
+    if status != 402:
+        return None
+    match = re.search(r"can only afford (\d+)", body)
+    return int(match.group(1)) if match else None
 
 
 async def stream_chat(provider: dict, model_id: str, messages: list, tools: list | None = None,
