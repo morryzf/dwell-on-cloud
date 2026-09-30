@@ -4309,6 +4309,30 @@ let guEl = null;
 /* ---------- 基础排版 ---------- */
 function atBottom() { return log.scrollHeight - log.scrollTop - log.clientHeight < 90; }
 function scroll(force) { if (force || atBottom()) log.scrollTop = log.scrollHeight; }
+/* 刚摆完消息时图片还没下来（历史图是 lazy 的，也没有尺寸占位），字体也还在路上。
+   只按一次底，它们随后撑高，滚动条还停在旧数字上，看到的就是靠前一点的位置。
+   每轮回复完也会把整段重摆一遍（reconcileAfterReply → loadSaid），最新那条就这样被压在输入框底下。
+   所以这一小会儿一直扶着底，手一碰就松开。 */
+let bottomLockUntil = 0, bottomLockFrame = 0;
+function releaseBottomLock() {
+  bottomLockUntil = 0;
+  if (bottomLockFrame) { cancelAnimationFrame(bottomLockFrame); bottomLockFrame = 0; }
+}
+function lockToBottom(ms = 1200) {
+  bottomLockUntil = performance.now() + ms;
+  if (bottomLockFrame) return;
+  const step = () => {
+    bottomLockFrame = 0;
+    if (performance.now() > bottomLockUntil) return;
+    log.scrollTop = log.scrollHeight;
+    bottomLockFrame = requestAnimationFrame(step);
+  };
+  bottomLockFrame = requestAnimationFrame(step);
+}
+['wheel', 'touchstart', 'mousedown'].forEach(type => {
+  log.addEventListener(type, releaseBottomLock, { passive: true });
+});
+document.addEventListener('keydown', releaseBottomLock, { passive: true });   // 翻页键、方向键也是手动
 function row(cls) {
   const d = document.createElement('div');
   d.className = 'row ' + (cls || '');
@@ -4529,12 +4553,26 @@ function refreshMessageSelection() {
   messageSelectCount.textContent = n ? '已选择 ' + n + ' 条' : '点消息来选择';
   messageSelectDelete.disabled = !n;
 }
-function setMessageSelectionMode(on) {
+/* 进出选择模式会给每行让出勾选框的位置，气泡重新折行、行也变高。
+   不扶一把的话滚动条还停在原来的数字上，眼睛就被推到前面的消息去了。 */
+function keepMessageInPlace(anchorRow, mutate) {
+  const edge = log.getBoundingClientRect().top;
+  const row = (anchorRow && anchorRow.isConnected) ? anchorRow
+    : [...log.querySelectorAll('.row[data-message-id]')].find(el => el.getBoundingClientRect().bottom > edge);
+  const wasBottom = atBottom();
+  const before = row ? row.getBoundingClientRect().top : 0;
+  mutate();
+  if (wasBottom) log.scrollTop = log.scrollHeight;
+  else if (row) log.scrollTop += row.getBoundingClientRect().top - before;
+}
+function setMessageSelectionMode(on, anchorRow) {
   messageSelectionMode = !!on;
   if (!on) selectedMessageIds.clear();
-  document.body.classList.toggle('selecting-messages', messageSelectionMode);
+  keepMessageInPlace(anchorRow, () => {
+    document.body.classList.toggle('selecting-messages', messageSelectionMode);
+    closeMessageActions();
+  });
   messageSelectBar.classList.toggle('on', messageSelectionMode);
-  closeMessageActions();
   refreshMessageSelection();
 }
 function toggleMessageSelection(messageId) {
@@ -4600,7 +4638,7 @@ function attachMessageActions(el, message) {
   const more = document.createElement('button'); more.className = 'msg-action'; more.title = '更多消息操作'; more.setAttribute('aria-label', '更多消息操作'); more.appendChild(icEl('dots', 18));
   const moreMenu = document.createElement('div'); moreMenu.className = 'msg-more';
   const addMore = (label, handler) => { const button = document.createElement('button'); button.textContent = label; button.onclick = async (event) => { event.stopPropagation(); await handler(); }; moreMenu.appendChild(button); };
-  addMore('选择消息', () => { close(); setMessageSelectionMode(true); toggleMessageSelection(message.id); });
+  addMore('选择消息', () => { setMessageSelectionMode(true, rowEl); toggleMessageSelection(message.id); });
   addMore('摘进最喜欢的话', async () => {
     close();
     const quote = String(message.text || '').trim();
@@ -5394,6 +5432,7 @@ async function loadSaid(focusMessageId = '') {
     if (msgs.length) earliestSeq = msgs[0].seq;
     ensureOlderBtn(!!d.more);
     scroll(true);
+    lockToBottom();
     return d.upto || 0;
   } catch (e) { return 0; }
 }
@@ -6310,7 +6349,11 @@ function drawerRelease(shown) {
     closeDrawer();
   }
 }
+/* 上面盖着别的层时，边缘手势不该穿过去摸到抽屉 */
+const DRAWER_BLOCKERS = '.sheetWrap.open, .image-viewer.open, .menuCard.open, #ttsChoicePicker.on, .cbk-full, #lockWrap:not(.gone)';
+function drawerCovered() { return !!document.querySelector(DRAWER_BLOCKERS); }
 document.addEventListener('touchstart', (e) => {
+  if (drawerCovered()) { dg = null; return; }
   const t = e.touches[0];
   const opened = drawerWrap.classList.contains('show');
   if (!opened && t.clientX < 30) {
@@ -6321,6 +6364,7 @@ document.addEventListener('touchstart', (e) => {
 }, { passive: true });
 document.addEventListener('touchmove', (e) => {
   if (!dg) return;
+  if (drawerCovered()) { if (dg.live) drawerRelease(0); dg = null; return; }
   const t = e.touches[0];
   const dx = t.clientX - dg.x, dy = t.clientY - dg.y;
   if (!dg.live) {
@@ -7035,6 +7079,7 @@ async function openSearchChatHit(hit) {
     cacheGlowSetChat(chat.id);
     refreshInstructionButton(); refreshMcpChatButton();
     await loadSaid(hit.message_id);
+    releaseBottomLock();                   // 这一趟是去找那句话的，别再扶着底
     document.querySelector('#log .row[data-message-id="' + CSS.escape(hit.message_id) + '"]')
       ?.scrollIntoView({ block: 'center' });
     poll();
