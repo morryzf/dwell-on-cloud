@@ -4594,10 +4594,14 @@ async def send(request: Request):
     ]
     for preview in previews:
         db.message_attachment_add(user_message["id"], preview)
+    # 文件正文只进这一轮，历史里留下发过哪些文件。
+    for item in text_files:
+        db.message_attachment_add(user_message["id"], item["name"], kind="file")
     _emit(chat_id, {
         "type": "echo",
         "text": saved_text,
         "images": previews,
+        "files": [item["name"] for item in text_files],
         "message_id": user_message["id"],
         "at": user_message["made"],
     })

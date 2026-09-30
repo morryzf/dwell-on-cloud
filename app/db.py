@@ -1265,14 +1265,24 @@ def message_add(chat_id: str, role: str, content: str, made: int | None = None,
     return row
 
 
-def message_attachment_add(message_id: str, data_url: str) -> dict:
-    """给消息保存一张经过前端压缩的图片缩略图。"""
-    if not data_url.startswith("data:image/") or len(data_url) > 700_000:
-        raise ValueError("图片缩略图无效或过大")
+def message_attachment_add(message_id: str, data_url: str, kind: str = "image") -> dict:
+    """保存消息的附件痕迹。
+
+    图片存的是前端压缩过的缩略图；文件只存文件名——正文跟原图一样只进当时
+    那一轮，不写进聊天记录，这里留的是「发过这个文件」这件事。
+    """
+    if kind == "image":
+        if not data_url.startswith("data:image/") or len(data_url) > 700_000:
+            raise ValueError("图片缩略图无效或过大")
+    elif kind == "file":
+        if not data_url.strip() or len(data_url) > 200:
+            raise ValueError("文件名无效或过长")
+    else:
+        raise ValueError("未知的附件类型")
     row = {
         "id": new_id(),
         "message_id": message_id,
-        "kind": "image",
+        "kind": kind,
         "data_url": data_url,
         "made": int(time.time()),
     }
@@ -1285,7 +1295,8 @@ def message_attachment_add(message_id: str, data_url: str) -> dict:
     return row
 
 
-def message_attachments(message_ids: list[str]) -> dict[str, list[str]]:
+def message_attachments(message_ids: list[str], kind: str = "image") -> dict[str, list[str]]:
+    """按类型取附件。图片返回缩略图的 data URL，文件返回文件名。"""
     ids = list(dict.fromkeys(message_ids))
     if not ids:
         return {}
@@ -1293,8 +1304,8 @@ def message_attachments(message_ids: list[str]) -> dict[str, list[str]]:
     with conn() as cx:
         rows = cx.execute(
             f"""SELECT message_id,data_url FROM message_attachments
-                WHERE message_id IN ({marks}) ORDER BY made ASC, rowid ASC""",
-            ids,
+                WHERE message_id IN ({marks}) AND kind=? ORDER BY made ASC, rowid ASC""",
+            [*ids, kind],
         ).fetchall()
     result: dict[str, list[str]] = {}
     for row in rows:
@@ -2116,6 +2127,7 @@ def message_ui_list(chat_id: str, limit: int = 400, before: int | None = None) -
     # The toggle controls future generation only. Persisted thinking remains part of history.
     assistant_ids = [row["id"] for row in rows if row["role"] == "assistant"]
     images_by_message = message_attachments([row["id"] for row in rows])
+    files_by_message = message_attachments([row["id"] for row in rows], kind="file")
     tools_by_message: dict[str, list[dict]] = {}
     if assistant_ids:
         placeholders = ",".join("?" for _ in assistant_ids)
@@ -2152,6 +2164,7 @@ def message_ui_list(chat_id: str, limit: int = 400, before: int | None = None) -
             "usage": usage,
             "tools": tools_by_message.get(r["id"], []) if role == "assistant" else [],
             "images": images_by_message.get(r["id"], []),
+            "files": files_by_message.get(r["id"], []),
         })
     more = False
     if msgs:
