@@ -2322,13 +2322,13 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   .composer textarea, .composer input, #box { color: var(--text); }
   .composer textarea::placeholder, .composer input::placeholder, #box::placeholder { color: color-mix(in srgb, var(--dim) 74%, transparent); }
   #send { background: #deaabd; color: #fff; box-shadow: 0 5px 12px rgba(181, 111, 136, .22); }
-  #send:hover { background: #e9b9c9; }
+  @media (hover: hover) { #send:not(.stop):hover { background: #e9b9c9; } }
   /* 暗色模式的主色压深一档：亮粉在深底上太跳，和「采用」「保存节奏」这些主按钮用同一个 #a88699。 */
   html[data-theme="dark"] #send { background: #a88699; box-shadow: 0 5px 12px rgba(0,0,0,.25); }
-  html[data-theme="dark"] #send:hover { background: #b393a5; }
+  @media (hover: hover) { html[data-theme="dark"] #send:not(.stop):hover { background: #b393a5; } }
   @media (prefers-color-scheme: dark) {
     html:not([data-theme="light"]) #send { background: #a88699; box-shadow: 0 5px 12px rgba(0,0,0,.25); }
-    html:not([data-theme="light"]) #send:hover { background: #b393a5; }
+    @media (hover: hover) { html:not([data-theme="light"]) #send:not(.stop):hover { background: #b393a5; } }
   }
   /* 输入框那一排：模型按钮和旁边的圆按钮用同一套玻璃，边框用 0.5px 细线。
      手机上 1px 会画成 3 个物理像素，加上内高光，看着像一圈粗边。
@@ -3699,6 +3699,40 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   html:not([data-theme="light"]) input[type="range"].ap-in {
     border: 0 !important; background: transparent !important; box-shadow: none !important;
     -webkit-backdrop-filter: none !important; backdrop-filter: none !important; padding: 0 !important;
+  }
+  /* 发送键：回复中换成「停止」——淡玻璃底 + 小方块，和旁边的圆按钮一个质感。暗色下原来
+     被粉色底盖住，停止样式一直没生效，这里一并压回去。
+     它自己单独一层合成、不做底色渐变：iPhone 上它在毛玻璃输入框里换颜色时只重画了一部分，
+     会留下一块块粉色。悬停色只给真有鼠标的设备，手机点过之后不再卡在浅粉。 */
+  #send {
+    isolation: isolate; -webkit-backface-visibility: hidden; backface-visibility: hidden;
+    transform: translateZ(0); will-change: transform;
+    transition: transform 150ms var(--ease-out) !important;
+  }
+  #send:active { transform: translateZ(0) scale(.97); }
+  #send.stop, html[data-theme="dark"] #send.stop, html:not([data-theme="light"]) #send.stop {
+    background: rgba(255,255,255,.3) !important;
+    box-shadow: inset 0 0 0 .5px rgba(158,112,133,.3) !important;
+  }
+  html[data-theme="dark"] #send.stop { background: rgba(255,235,244,.12) !important; box-shadow: inset 0 0 0 .5px rgba(255,235,244,.22) !important; }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) #send.stop { background: rgba(255,235,244,.12) !important; box-shadow: inset 0 0 0 .5px rgba(255,235,244,.22) !important; }
+  }
+  /* 侧栏的 Cloudy / Other：选中的那块撑满自己那一半，底色是淡玻璃，不是实色。 */
+  .assistant-choice > span { width: 100%; }
+  .assistant-choice.on > span {
+    background: rgba(255,255,255,.34);
+    box-shadow: inset 0 0 0 .5px rgba(158,112,133,.22);
+  }
+  html[data-theme="dark"] .assistant-choice.on > span { background: rgba(255,235,244,.10); box-shadow: inset 0 0 0 .5px rgba(255,235,244,.18); }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) .assistant-choice.on > span { background: rgba(255,235,244,.10); box-shadow: inset 0 0 0 .5px rgba(255,235,244,.18); }
+  }
+  /* 侧栏左下的设置按钮：边框改成 0.5px 细线。 */
+  #drawer #avatarBtn { border: 0 !important; box-shadow: inset 0 0 0 .5px rgba(158,112,133,.3), 0 3px 10px rgba(91,63,77,.1) !important; }
+  html[data-theme="dark"] #drawer #avatarBtn { box-shadow: inset 0 0 0 .5px rgba(255,235,244,.22), 0 3px 10px rgba(0,0,0,.18) !important; }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) #drawer #avatarBtn { box-shadow: inset 0 0 0 .5px rgba(255,235,244,.22), 0 3px 10px rgba(0,0,0,.18) !important; }
   }
   /* 设置、心跳：同一组里的行与行之间不画分隔线，靠间距分开。 */
   #settingsSheet .group .grow + .grow, #heartbeatSheet .group .grow + .grow { border-top: 0 !important; }
