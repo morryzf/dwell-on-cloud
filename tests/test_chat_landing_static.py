@@ -23,6 +23,11 @@ class ChatLandingStaticTest(unittest.TestCase):
         self.assertIn("releaseBottomLock();", jump)
         self.assertLess(jump.index("releaseBottomLock();"), jump.index("scrollIntoView({ block: 'center' })"))
 
+    def test_scroll_to_latest_button(self):
+        self.assertIn('<button id="scrollBottom" aria-label="回到最新">', self.page)
+        self.assertIn("function updateScrollBtn() { scrollBottomBtn.classList.toggle('show', !atBottom()); }", self.page)
+        self.assertIn("log.addEventListener('scroll', updateScrollBtn, { passive: true });", self.page)
+
 
 if __name__ == "__main__":
     unittest.main()
