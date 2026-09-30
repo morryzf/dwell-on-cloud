@@ -26,7 +26,9 @@ class MemoryConsoleStaticTest(unittest.TestCase):
     def test_console_explains_and_controls_phase_three_injection(self):
         self.assertIn("按需记忆已开启", self.html)
         self.assertIn("隐藏、归档和过期内容会自动排除", self.html)
-        self.assertIn("暂停按需记忆", self.html)
+        self.assertIn("'memoryInjectionToggle'", self.html)
+        self.assertIn("mc-switch-row", self.html)
+        self.assertIn("wireMemorySwitch(", self.html)
         self.assertIn("最近一次带入", self.html)
 
     def test_summary_typography_is_compact(self):
@@ -73,6 +75,14 @@ class MemoryConsoleStaticTest(unittest.TestCase):
         self.assertIn("尚未处理的新分段", self.html)
 
 
+    def test_tabs_follow_the_systems(self):
+        self.assertIn("let memoryConsoleTab = 'cards';", self.html)
+        self.assertIn("[['cards','记忆卡',active.length],['review','待确认',drafts.length],['summary','摘要',''],['settings','设置','']]", self.html)
+        self.assertIn('<details class="mc-used-fold">', self.html)
+        # cloud 没有这些后端，设置页不能露出它们的开关
+        for absent in ("sigilloToggle", "embeddingModel", "memorySharedToggle", "memoryRetag"):
+            self.assertNotIn(absent, self.html)
+
+
 if __name__ == "__main__":
     unittest.main()
-

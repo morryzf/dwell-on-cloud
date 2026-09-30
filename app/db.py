@@ -794,8 +794,36 @@ def night_list(limit: int = 200) -> list:
 
 # ---------------------------------------------------------------- 待办
 
-def todos_all() -> dict:
+
+# 一天从几点算起。凌晨两点对人来说还是「今天」——
+# 每天固定的待办不该在你还醒着的时候就自己把勾弹回去。
+DAY_START_HOUR = 6
+TODOS_FIXED_RESET_KEY = "todos_fixed_reset_day"
+
+
+def day_key(now: datetime | None = None) -> str:
+    """此刻算哪一天。DAY_START_HOUR 之前算前一天。"""
+    return ((now or cn_now()) - timedelta(hours=DAY_START_HOUR)).date().isoformat()
+
+
+def todos_reset_fixed_for_new_day(now: datetime | None = None) -> bool:
+    """新的一天，把「每天」的待办重新打开。
+
+    没有定时任务，读待办的时候顺手做——反正没人看的时候，
+    勾是开是关也没意义。
+    """
+    today = day_key(now)
+    if setting_get(TODOS_FIXED_RESET_KEY, "") == today:
+        return False
+    with conn() as cx:
+        cx.execute("UPDATE todos SET done=0 WHERE fixed=1 AND done=1")
+    setting_set(TODOS_FIXED_RESET_KEY, today)
+    return True
+
+
+def todos_all(now: datetime | None = None) -> dict:
     """两栏一起给。排序交给前端——它知道"现在几点"，服务器不该猜。"""
+    todos_reset_fixed_for_new_day(now)
     with conn() as cx:
         rows = cx.execute("SELECT * FROM todos").fetchall()
     out = {"mine": [], "hers": []}
@@ -1237,14 +1265,24 @@ def message_add(chat_id: str, role: str, content: str, made: int | None = None,
     return row
 
 
-def message_attachment_add(message_id: str, data_url: str) -> dict:
-    """给消息保存一张经过前端压缩的图片缩略图。"""
-    if not data_url.startswith("data:image/") or len(data_url) > 700_000:
-        raise ValueError("图片缩略图无效或过大")
+def message_attachment_add(message_id: str, data_url: str, kind: str = "image") -> dict:
+    """保存消息的附件痕迹。
+
+    图片存的是前端压缩过的缩略图；文件只存文件名——正文跟原图一样只进当时
+    那一轮，不写进聊天记录，这里留的是「发过这个文件」这件事。
+    """
+    if kind == "image":
+        if not data_url.startswith("data:image/") or len(data_url) > 700_000:
+            raise ValueError("图片缩略图无效或过大")
+    elif kind == "file":
+        if not data_url.strip() or len(data_url) > 200:
+            raise ValueError("文件名无效或过长")
+    else:
+        raise ValueError("未知的附件类型")
     row = {
         "id": new_id(),
         "message_id": message_id,
-        "kind": "image",
+        "kind": kind,
         "data_url": data_url,
         "made": int(time.time()),
     }
@@ -1257,7 +1295,8 @@ def message_attachment_add(message_id: str, data_url: str) -> dict:
     return row
 
 
-def message_attachments(message_ids: list[str]) -> dict[str, list[str]]:
+def message_attachments(message_ids: list[str], kind: str = "image") -> dict[str, list[str]]:
+    """按类型取附件。图片返回缩略图的 data URL，文件返回文件名。"""
     ids = list(dict.fromkeys(message_ids))
     if not ids:
         return {}
@@ -1265,8 +1304,8 @@ def message_attachments(message_ids: list[str]) -> dict[str, list[str]]:
     with conn() as cx:
         rows = cx.execute(
             f"""SELECT message_id,data_url FROM message_attachments
-                WHERE message_id IN ({marks}) ORDER BY made ASC, rowid ASC""",
-            ids,
+                WHERE message_id IN ({marks}) AND kind=? ORDER BY made ASC, rowid ASC""",
+            [*ids, kind],
         ).fetchall()
     result: dict[str, list[str]] = {}
     for row in rows:
@@ -2088,6 +2127,7 @@ def message_ui_list(chat_id: str, limit: int = 400, before: int | None = None) -
     # The toggle controls future generation only. Persisted thinking remains part of history.
     assistant_ids = [row["id"] for row in rows if row["role"] == "assistant"]
     images_by_message = message_attachments([row["id"] for row in rows])
+    files_by_message = message_attachments([row["id"] for row in rows], kind="file")
     tools_by_message: dict[str, list[dict]] = {}
     if assistant_ids:
         placeholders = ",".join("?" for _ in assistant_ids)
@@ -2124,6 +2164,7 @@ def message_ui_list(chat_id: str, limit: int = 400, before: int | None = None) -
             "usage": usage,
             "tools": tools_by_message.get(r["id"], []) if role == "assistant" else [],
             "images": images_by_message.get(r["id"], []),
+            "files": files_by_message.get(r["id"], []),
         })
     more = False
     if msgs:
@@ -2249,6 +2290,20 @@ def provider_model_upsert(provider_id: str, model_id: str, favorite: bool | None
         )
         row = cx.execute("SELECT * FROM provider_models WHERE provider_id=? AND model_id=?", (provider_id, model_id)).fetchone()
     return {**dict(row), "favorite": bool(row["favorite"]), "manual": bool(row["manual"])}
+
+
+def provider_model_delete(provider_id: str, model_id: str) -> bool:
+    """把一个模型从目录里拿掉。
+
+    取消常用只是清掉标记，行还留着；手动加错的名字不在供应商的抓取结果里，
+    不删就永远清不掉。抓来的删掉后，下次「获取 / 刷新」会自己回来。
+    """
+    with conn() as cx:
+        cur = cx.execute(
+            "DELETE FROM provider_models WHERE provider_id=? AND model_id=?",
+            (provider_id, model_id),
+        )
+    return cur.rowcount > 0
 
 
 def provider_models_refresh(provider_id: str, model_ids: list[str]) -> int:

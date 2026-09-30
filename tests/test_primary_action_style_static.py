@@ -6,8 +6,8 @@ INDEX = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
 
 
 def test_memory_overview_describes_conversation_continuity():
-    assert "总览维持对话的连续性" in INDEX
-    assert "总览维持这段关系的连续性" not in INDEX
+    assert "摘要维持对话的连续性" in INDEX
+    assert "维持这段关系的连续性" not in INDEX
 
 
 def test_primary_settings_actions_share_a_clear_visual_style():
@@ -31,6 +31,6 @@ def test_primary_settings_actions_share_a_clear_visual_style():
     assert "border-color: var(--accent) !important;" in INDEX[light_rule:light_rule + 420]
     assert "color: #fff !important;" in INDEX[light_rule:light_rule + 420]
     dark_rule = INDEX.index('html[data-theme="dark"] .sheet .ap-b.go {')
-    assert "background: linear-gradient(145deg, #a6657d, #875064) !important;" in INDEX[dark_rule:dark_rule + 420]
+    assert "background: #a6657d !important;" in INDEX[dark_rule:dark_rule + 420]
     assert ".sheet .ap-b.go:active { transform: scale(.97); }" in INDEX
     assert "@media (hover: hover) and (pointer: fine)" in INDEX

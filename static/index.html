@@ -154,9 +154,7 @@ html[data-theme="dark"] {
   .composer, #nkPop, .nk-say, .board-toggle, .menuCard, .crow, .songcard {
     
     background: var(--glass);
-    background: linear-gradient(180deg,
-      color-mix(in srgb, var(--card) 76%, transparent),
-      color-mix(in srgb, var(--card) 58%, transparent));
+    background: color-mix(in srgb, var(--card) 76%, transparent);
     -webkit-backdrop-filter: blur(24px) saturate(1.9) brightness(1.04);
     backdrop-filter: blur(24px) saturate(1.9) brightness(1.04);
     border: 0;
@@ -177,9 +175,7 @@ html:not([data-theme="light"]) .glass,
     html:not([data-theme="light"]) .menuCard,
     html:not([data-theme="light"]) .crow {
       background: var(--glass);
-      background: linear-gradient(180deg,
-        color-mix(in srgb, var(--card) 74%, transparent),
-        color-mix(in srgb, var(--card) 56%, transparent));
+      background: color-mix(in srgb, var(--card) 74%, transparent);
       box-shadow:
         0 12px 38px rgba(0,0,0,.42),
         0 1px 3px rgba(0,0,0,.3),
@@ -197,9 +193,7 @@ html[data-theme="dark"] .glass,
   html[data-theme="dark"] .menuCard,
   html[data-theme="dark"] .crow {
       background: var(--glass);
-      background: linear-gradient(180deg,
-        color-mix(in srgb, var(--card) 74%, transparent),
-        color-mix(in srgb, var(--card) 56%, transparent));
+      background: color-mix(in srgb, var(--card) 74%, transparent);
       box-shadow:
         0 12px 38px rgba(0,0,0,.42),
         0 1px 3px rgba(0,0,0,.3),
@@ -279,6 +273,13 @@ html[data-theme="dark"] .glass,
     white-space: pre-wrap; word-break: break-word; line-height: 1.55;
     font-family: "Noto Serif SC", "Songti SC", serif; font-size: 15.5px;
   }
+  .chatfile {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 6px;
+    max-width: 100%; padding: 5px 10px; border-radius: 10px;
+    background: rgba(128,128,128,.14); color: var(--dim);
+    font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .chatfile + .chatfile { margin-left: 6px; }
   #log .gu img.chatimg, .bubble img.chatimg {
     width: auto; max-width: min(220px, 70%); max-height: min(220px, 28vh);
     object-fit: contain; border-radius: 14px; display: block; margin: 7px 0;
@@ -880,6 +881,7 @@ html[data-theme="dark"] .composer {
   .ap-cache-help { margin: 7px 2px 0; color: var(--dim); font-size: 12.5px; line-height: 1.55; }
   .ap-section-description { margin: 2px 0 0; color: var(--dim); font-size: 12.5px; line-height: 1.55; }
   .provider-profile-list { margin-top: 12px; }
+  .group .provider-profile-row { padding: 10px 16px; font-size: 14.5px; gap: 10px; }
   .provider-profile-row { transition: transform 140ms var(--ease-out), background-color 160ms ease; }
   .provider-profile-row:active { transform: scale(.985); }
   .provider-profile-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -899,6 +901,7 @@ html[data-theme="dark"] .composer {
   }
   .ap-b:active { transform: scale(.985); }
   .ap-b.go { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .ap-b.danger { color: var(--danger, #c0566f); }
   .ap-msg { display: none; margin-top: 12px; padding: 11px 12px; border-radius: 11px; color: var(--green); background: var(--sage-track); font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
   .ap-msg.on { display: block; }
   .ap-msg.bad { color: var(--red); background: var(--red-track); }
@@ -1007,6 +1010,7 @@ html[data-theme="dark"] .composer {
   .model-catalog-provider { color: var(--dim); font-size: 12px; white-space: nowrap; }
   .model-catalog-action { flex: none; min-width: 42px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--card); color: var(--text); font-size: 13px; font-weight: 700; }
   .model-catalog-action.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .model-catalog-action.remove { min-width: 32px; padding: 4px 6px; color: var(--dim); font-weight: 400; }
   .row { position: relative; }
   .row.actions-on { padding-bottom: 30px; }
   .msg-actions { display: none; position: absolute; z-index: 8; left: 0; bottom: 2px; align-items: center; gap: 12px; max-width: calc(100vw - 36px); padding: 0; border: 0; background: transparent; box-shadow: none; }
@@ -1273,7 +1277,7 @@ html[data-theme="dark"] .composer {
   .sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px;
     border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.18);
     transition: transform .28s cubic-bezier(.34,1.4,.5,1); }
-  .sw.on { background: var(--sage); }
+  .sw.on { background: var(--accent); }
   .sw.on::after { transform: translateX(18px); }
   .sw.wait { opacity: .45; }
   .grow .val + .sw { margin-left: 10px; }
@@ -1588,7 +1592,7 @@ html[data-theme="dark"] .composer {
   .nk-shelf-tier + .nk-shelf-tier { margin-top: 20px; }
   .nk-book-cover { position: relative; display: flex; align-items: center; justify-content: center; width: 100%;
     aspect-ratio: 2 / 3; min-width: 0; padding: 0; border: 0; border-radius: 2px 4px 4px 2px; overflow: hidden;
-    color: #eee1d7; background: linear-gradient(145deg,#321018,#13090d 72%); box-shadow: -3px 2px 0 #090406, 4px 7px 13px rgba(0,0,0,.48);
+    color: #eee1d7; background: #321018; box-shadow: -3px 2px 0 #090406, 4px 7px 13px rgba(0,0,0,.48);
     transform-origin: bottom center; transition: transform 180ms cubic-bezier(.23,1,.32,1), filter 180ms ease; }
   .nk-book-cover::after { content: ''; position: absolute; inset: 0; pointer-events: none;
     box-shadow: inset 2px 0 rgba(255,255,255,.08), inset -1px 0 rgba(0,0,0,.5); }
@@ -1607,7 +1611,7 @@ html[data-theme="dark"] .composer {
     min-height: 64px; padding: 16px 8px 0; }
   .nk-collection-keepsake { position: relative; width: 72px; height: 42px; border: 1px solid rgba(201,166,151,.2);
     border-radius: 2px 6px 6px 2px; color: rgba(232,215,207,.62);
-    background: linear-gradient(145deg,#34131a,#16090d 72%); box-shadow: -2px 2px 0 #080405, 4px 7px 14px rgba(0,0,0,.4);
+    background: #34131a; box-shadow: -2px 2px 0 #080405, 4px 7px 14px rgba(0,0,0,.4);
     font: 500 9px/1 inherit; letter-spacing: .12em; transition: transform 140ms cubic-bezier(.23,1,.32,1), filter 180ms ease; }
   .nk-collection-keepsake::after { content: ''; position: absolute; left: 8px; right: 7px; bottom: 5px; height: 1px;
     background: rgba(221,198,184,.24); box-shadow: 0 -3px rgba(221,198,184,.1); }
@@ -1620,7 +1624,7 @@ html[data-theme="dark"] .composer {
   .nk-room-panel .sh-head h1, .nk-room-panel .sh-head .sub { color: #eadfda; }
   .nk-detail-hero { display: grid; grid-template-columns: 112px 1fr; gap: 20px; align-items: end; margin: 18px 0 22px; }
   .nk-detail-cover { aspect-ratio: 2/3; border-radius: 3px 6px 6px 3px; overflow: hidden;
-    background: linear-gradient(145deg,#43151e,#12090c); box-shadow: -5px 4px 0 #080405, 10px 18px 35px rgba(0,0,0,.46); }
+    background: #43151e; box-shadow: -5px 4px 0 #080405, 10px 18px 35px rgba(0,0,0,.46); }
   .nk-detail-cover img { width: 100%; height: 100%; object-fit: cover; }
   .nk-detail-cover .fallback { height: 100%; display: grid; place-content: center; padding: 14px; text-align: center;
     font-family: var(--serif); color: #eadfda; }
@@ -2006,11 +2010,38 @@ html[data-theme="dark"] .note { color: #2f2b26; box-shadow: 0 3px 12px rgba(0,0,
           background: var(--panel); color: var(--text);
           font-variant-numeric: tabular-nums; transition: background .2s, color .2s; }
   .chip.on { background: var(--text); color: var(--bg); }
+  /* 空的 time 输入框什么都不显，在手机上就是个莫名其妙的空药片。
+     套一层壳：药片的长相全在壳上（和 .chip 一模一样），
+     里头的 input 脱得只剩文字。没选时间时读作「时间」，
+     选了就让真值露出来。 */
+  .hadd .tmwrap {
+    position: relative; display: inline-flex; align-items: center;
+    border: 0; border-radius: 999px; padding: 7px 14px; font-size: 12.5px;
+    background: var(--panel); color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  /* 里头是拉丁数字，行高天生比中文矮。用一个看不见的中文字撑高度，
+     才能和旁边的「每天」严丝合缝。 */
+  .hadd .tmwrap::after {
+    content: '时'; width: 0; overflow: hidden; visibility: hidden;
+  }
+  .hadd .tmwrap::before {
+    content: '时间'; position: absolute; left: 14px; pointer-events: none;
+    color: var(--dim);
+  }
+  .hadd .tmwrap.set::before { content: none; }
+  .hadd .tmwrap:not(.set) input[type=time] { color: transparent; }
   .hadd input[type=time] {
-    border: 0; border-radius: 999px; padding: 6px 12px;
-    background: var(--panel); color: inherit; font: inherit; font-size: 12.5px;
+    border: 0; padding: 0; margin: 0; background: transparent; color: inherit;
+    font: inherit; font-size: 12.5px; min-width: 44px;
+    /* UA 还会在 time 输入框上多摊 2px。告诉它就占一个行高，
+       和旁边「每天」的文字占得一样多。 */
+    height: 1.7em;
     font-variant-numeric: tabular-nums; -webkit-appearance: none; appearance: none;
   }
+  /* iOS 会给 time 输入框塔上一堆自己的内边距和图标。 */
+  .hadd input[type=time]::-webkit-date-and-time-value { margin: 0; text-align: left; }
+  .hadd input[type=time]::-webkit-calendar-picker-indicator { display: none; }
   .hadd .go { margin-left: auto; border: 0; border-radius: 999px; padding: 8px 20px;
               font-size: 13px; background: var(--text); color: var(--bg); font-weight: 500; }
 
@@ -2270,7 +2301,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     }
   }
   header {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--card) 92%, transparent), color-mix(in srgb, var(--card) 73%, transparent));
+    background: color-mix(in srgb, var(--card) 92%, transparent);
     border-bottom: 1px dotted color-mix(in srgb, var(--accent) 56%, var(--line));
     box-shadow: 0 7px 20px rgba(87, 68, 76, .06);
   }
@@ -2286,7 +2317,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   header .iconbtn:active, #plusBtn:active, #instructionsBtn:active, #mcpChatBtn:active, #reasoningBtn:active, .pill:active, #send:active { transform: scale(.97); }
 
   .glass, .composer, #nkPop, .nk-say, .board-toggle, .menuCard, .crow, .songcard, #drawer, .sheet {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--card) 96%, transparent), color-mix(in srgb, var(--card) 82%, var(--accent-soft))) !important;
+    background: color-mix(in srgb, var(--card) 96%, transparent) !important;
     border: 1px solid color-mix(in srgb, var(--accent) 37%, var(--line)) !important;
     outline: 1px dotted color-mix(in srgb, var(--accent) 34%, transparent);
     outline-offset: -5px;
@@ -2298,8 +2329,8 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   .composer { border-radius: 22px; }
   .composer textarea, .composer input, #box { color: var(--text); }
   .composer textarea::placeholder, .composer input::placeholder, #box::placeholder { color: color-mix(in srgb, var(--dim) 74%, transparent); }
-  #send { background: linear-gradient(135deg, #deaabd, #c992a4); color: #fff; box-shadow: 0 5px 12px rgba(181, 111, 136, .22); }
-  #send:hover { background: linear-gradient(135deg, #e9b9c9, #d29bad); }
+  #send { background: #deaabd; color: #fff; box-shadow: 0 5px 12px rgba(181, 111, 136, .22); }
+  #send:hover { background: #e9b9c9; }
   #scrollBottom {
     background: rgba(255,255,255,.32) !important;
     border-color: rgba(158,112,133,.18) !important;
@@ -2370,7 +2401,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   .composer, #nkPop, .nk-say, .board-toggle, .menuCard, .songcard, .crow, .sheet,
   .group, .ap-section, .ap-in, .ap-b, .model-catalog-action, .filecard, .ucard,
   .bn-card, .fav-card, .dm-card, .brick-card, .hcard, .hl-card, #log .gu, #log .bubble {
-    background: linear-gradient(145deg, rgba(255,253,254,.67), rgba(238,218,226,.35)) !important;
+    background: rgba(255,253,254,.67) !important;
     border: 1px solid rgba(255,255,255,.65) !important;
     -webkit-backdrop-filter: blur(22px) saturate(1.35) brightness(1.04);
     backdrop-filter: blur(22px) saturate(1.35) brightness(1.04);
@@ -2380,11 +2411,11 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   .sheet::after { background: transparent; }
   .sheet .group, .sheet .ap-section, .sheet .ucard, .sheet .bn-card, .sheet .fav-card,
   .sheet .dm-card, .sheet .brick-card, .sheet .hcard, .sheet .hl-card {
-    background: linear-gradient(145deg, rgba(255,255,255,.40), rgba(232,205,217,.21)) !important;
+    background: rgba(255,255,255,.40) !important;
     box-shadow: inset 0 1px rgba(255,255,255,.54), 0 5px 15px rgba(83,59,71,.07) !important;
   }
   .ap-in, .ap-b, .model-catalog-action { box-shadow: inset 0 1px rgba(255,255,255,.72), 0 2px 8px rgba(83,59,71,.06) !important; }
-  #log .bubble { background: linear-gradient(145deg, rgba(247,220,230,.72), rgba(221,172,194,.37)) !important; }
+  #log .bubble { background: rgba(247,220,230,.72) !important; }
   #drawer .nav .item, #drawer .nav .recent {
     background: rgba(255,255,255,.19); border-color: rgba(255,255,255,.30);
     -webkit-backdrop-filter: blur(12px) saturate(1.2);
@@ -2403,16 +2434,16 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   html[data-theme="dark"] .bn-card, html[data-theme="dark"] .fav-card, html[data-theme="dark"] .dm-card,
   html[data-theme="dark"] .brick-card, html[data-theme="dark"] .hcard, html[data-theme="dark"] .hl-card,
   html[data-theme="dark"] #log .gu, html[data-theme="dark"] #log .bubble {
-    background: linear-gradient(145deg, rgba(82,75,80,.73), rgba(59,53,58,.48)) !important;
+    background: rgba(82,75,80,.73) !important;
     border-color: rgba(255,235,244,.17) !important;
     box-shadow: 0 9px 24px rgba(0,0,0,.19), inset 0 1px rgba(255,238,246,.13), inset 0 -1px rgba(0,0,0,.16) !important;
   }
   html[data-theme="dark"] .sheet .group, html[data-theme="dark"] .sheet .ap-section, html[data-theme="dark"] .sheet .ucard,
   html[data-theme="dark"] .sheet .bn-card, html[data-theme="dark"] .sheet .fav-card, html[data-theme="dark"] .sheet .dm-card,
   html[data-theme="dark"] .sheet .brick-card, html[data-theme="dark"] .sheet .hcard, html[data-theme="dark"] .sheet .hl-card {
-    background: linear-gradient(145deg, rgba(255,235,244,.10), rgba(255,188,212,.045)) !important;
+    background: rgba(255,235,244,.10) !important;
   }
-  html[data-theme="dark"] #log .bubble { background: linear-gradient(145deg, rgba(119,82,99,.72), rgba(87,62,75,.56)) !important; }
+  html[data-theme="dark"] #log .bubble { background: rgba(119,82,99,.72) !important; }
   html[data-theme="dark"] #drawer .nav .item, html[data-theme="dark"] #drawer .nav .recent {
     background: rgba(255,235,244,.065); border-color: rgba(255,235,244,.10); box-shadow: inset 0 1px rgba(255,238,246,.09);
   }
@@ -2425,16 +2456,16 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     html:not([data-theme="light"]) .bn-card, html:not([data-theme="light"]) .fav-card, html:not([data-theme="light"]) .dm-card,
     html:not([data-theme="light"]) .brick-card, html:not([data-theme="light"]) .hcard, html:not([data-theme="light"]) .hl-card,
     html:not([data-theme="light"]) #log .gu, html:not([data-theme="light"]) #log .bubble {
-      background: linear-gradient(145deg, rgba(82,75,80,.73), rgba(59,53,58,.48)) !important;
+      background: rgba(82,75,80,.73) !important;
       border-color: rgba(255,235,244,.17) !important;
       box-shadow: 0 9px 24px rgba(0,0,0,.19), inset 0 1px rgba(255,238,246,.13), inset 0 -1px rgba(0,0,0,.16) !important;
     }
     html:not([data-theme="light"]) .sheet .group, html:not([data-theme="light"]) .sheet .ap-section, html:not([data-theme="light"]) .sheet .ucard,
     html:not([data-theme="light"]) .sheet .bn-card, html:not([data-theme="light"]) .sheet .fav-card, html:not([data-theme="light"]) .sheet .dm-card,
     html:not([data-theme="light"]) .sheet .brick-card, html:not([data-theme="light"]) .sheet .hcard, html:not([data-theme="light"]) .sheet .hl-card {
-      background: linear-gradient(145deg, rgba(255,235,244,.10), rgba(255,188,212,.045)) !important;
+      background: rgba(255,235,244,.10) !important;
     }
-    html:not([data-theme="light"]) #log .bubble { background: linear-gradient(145deg, rgba(119,82,99,.72), rgba(87,62,75,.56)) !important; }
+    html:not([data-theme="light"]) #log .bubble { background: rgba(119,82,99,.72) !important; }
     html:not([data-theme="light"]) #drawer .nav .item, html:not([data-theme="light"]) #drawer .nav .recent {
       background: rgba(255,235,244,.065); border-color: rgba(255,235,244,.10); box-shadow: inset 0 1px rgba(255,238,246,.09);
     }
@@ -2470,15 +2501,11 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   }
   .lk-knob {
     overflow: hidden;
-    background: linear-gradient(145deg, rgba(255,255,255,.83), rgba(222, 186, 200, .48)) !important;
+    background: rgba(255,255,255,.83) !important;
     border: 1px solid rgba(255,255,255,.8);
     -webkit-backdrop-filter: blur(14px) saturate(1.35);
     backdrop-filter: blur(14px) saturate(1.35);
     box-shadow: 0 7px 18px rgba(73,52,62,.22), inset 0 1px rgba(255,255,255,.9), inset 0 -1px rgba(167,119,138,.18) !important;
-  }
-  .lk-knob::before {
-    content: ''; position: absolute; inset: 1px; border-radius: inherit; pointer-events: none;
-    background: linear-gradient(135deg, rgba(255,255,255,.58), transparent 45%);
   }
   .lk-knob::after { position: relative; border-color: #625860; }
   html[data-theme="dark"] #drawer {
@@ -2490,7 +2517,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     background: rgba(255,235,244,.1); border-color: rgba(255,235,244,.13);
   }
   html[data-theme="dark"] .lk-knob {
-    background: linear-gradient(145deg, rgba(242,218,229,.82), rgba(184,125,148,.55)) !important;
+    background: rgba(242,218,229,.82) !important;
     border-color: rgba(255,246,250,.52);
   }
   @media (prefers-color-scheme: dark) {
@@ -2507,7 +2534,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
       background: rgba(255,235,244,.1); border-color: rgba(255,235,244,.13);
     }
     html:not([data-theme="light"]) .lk-knob {
-      background: linear-gradient(145deg, rgba(242,218,229,.82), rgba(184,125,148,.55)) !important;
+      background: rgba(242,218,229,.82) !important;
       border-color: rgba(255,246,250,.52);
     }
   }
@@ -2522,21 +2549,20 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   }
   #drawer .nav .item + .item, #drawer .nav .recent + .recent { margin-top: 0; }
   #drawer .nav .item.on {
-    background: linear-gradient(145deg, rgba(255,255,255,.42), rgba(244,216,228,.22));
+    background: rgba(255,255,255,.42);
     border-color: rgba(255,255,255,.48);
     box-shadow: inset 0 1px rgba(255,255,255,.56), 0 4px 12px rgba(92,64,78,.07);
     -webkit-backdrop-filter: blur(14px) saturate(1.2);
     backdrop-filter: blur(14px) saturate(1.2);
   }
   .lk-knob {
-    background: radial-gradient(circle at 31% 22%, rgba(255,255,255,.68), rgba(252,228,237,.36) 37%, rgba(211,158,179,.48) 100%) !important;
+    background: rgba(252,228,237,.36) !important;
     border-color: rgba(182,128,151,.30) !important;
     box-shadow: 0 7px 18px rgba(73,52,62,.18), inset 0 1px rgba(255,255,255,.38), inset 0 -1px rgba(156,103,124,.12) !important;
   }
-  .lk-knob::before { background: linear-gradient(135deg, rgba(255,255,255,.30), transparent 48%); }
   .lk-knob::after { border-color: #6a5d64; }
   .composer {
-    background: linear-gradient(145deg, rgba(255,253,254,.47), rgba(244,218,229,.20)) !important;
+    background: rgba(255,253,254,.47) !important;
     border-color: rgba(255,255,255,.54) !important;
     -webkit-backdrop-filter: blur(34px) saturate(1.55) brightness(1.05);
     backdrop-filter: blur(34px) saturate(1.55) brightness(1.05);
@@ -2546,11 +2572,11 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     background: transparent; border-color: transparent; box-shadow: none;
   }
   html[data-theme="dark"] #drawer .nav .item.on {
-    background: linear-gradient(145deg, rgba(255,235,244,.16), rgba(255,184,210,.055));
+    background: rgba(255,235,244,.16);
     border-color: rgba(255,235,244,.16); box-shadow: inset 0 1px rgba(255,238,246,.14), 0 4px 12px rgba(0,0,0,.12);
   }
   html[data-theme="dark"] .composer {
-    background: linear-gradient(145deg, rgba(92,82,89,.58), rgba(61,54,60,.34)) !important;
+    background: rgba(92,82,89,.58) !important;
     border-color: rgba(255,235,244,.20) !important;
   }
   @media (prefers-color-scheme: dark) {
@@ -2558,11 +2584,11 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
       background: transparent; border-color: transparent; box-shadow: none;
     }
     html:not([data-theme="light"]) #drawer .nav .item.on {
-      background: linear-gradient(145deg, rgba(255,235,244,.16), rgba(255,184,210,.055));
+      background: rgba(255,235,244,.16);
       border-color: rgba(255,235,244,.16); box-shadow: inset 0 1px rgba(255,238,246,.14), 0 4px 12px rgba(0,0,0,.12);
     }
     html:not([data-theme="light"]) .composer {
-      background: linear-gradient(145deg, rgba(92,82,89,.58), rgba(61,54,60,.34)) !important;
+      background: rgba(92,82,89,.58) !important;
       border-color: rgba(255,235,244,.20) !important;
     }
   }
@@ -2580,22 +2606,21 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     box-shadow: inset 0 1px rgba(255,255,255,.20), inset 0 -1px rgba(155,104,126,.06), 0 8px 20px rgba(93,65,78,.09) !important;
   }
   .lk-knob {
-    background: linear-gradient(145deg, rgba(255,255,255,.28), rgba(238,194,213,.16)) !important;
+    background: rgba(255,255,255,.28) !important;
     border-color: rgba(158,112,133,.20) !important;
     -webkit-backdrop-filter: blur(18px) saturate(1.45) brightness(1.08);
     backdrop-filter: blur(18px) saturate(1.45) brightness(1.08);
     box-shadow: 0 7px 18px rgba(75,51,63,.14), inset 0 1px rgba(255,255,255,.22), inset 0 -1px rgba(158,105,126,.06) !important;
   }
-  .lk-knob::before { background: linear-gradient(135deg, rgba(255,255,255,.12), transparent 48%); }
   .chatrow { gap: 10px; margin-bottom: 10px; }
   .chatrow .crow {
-    background: linear-gradient(145deg, rgba(255,255,255,.34), rgba(240,211,224,.15)) !important;
+    background: rgba(255,255,255,.34) !important;
     border-color: rgba(158,112,133,.16) !important;
     box-shadow: 0 6px 18px rgba(86,58,71,.075), inset 0 1px rgba(255,255,255,.20) !important;
   }
   .chatdel {
     width: 54px; color: color-mix(in srgb, var(--dim) 82%, var(--accent));
-    background: linear-gradient(145deg, rgba(255,255,255,.24), rgba(240,211,224,.10)) !important;
+    background: rgba(255,255,255,.24) !important;
     border-color: rgba(158,112,133,.15) !important;
     -webkit-backdrop-filter: blur(18px) saturate(1.25);
     backdrop-filter: blur(18px) saturate(1.25);
@@ -2631,14 +2656,14 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   #settingsSheet .group .grow .val { font-size: 14px; }
   #settingsSheet .group .grow .chev { font-size: 13px; }
   html[data-theme="dark"] .lk-track { background-color: rgba(210,153,178,.07) !important; background-image: linear-gradient(90deg, rgba(255,220,235,.075) 50%, transparent 50%), linear-gradient(rgba(255,220,235,.055) 50%, transparent 50%) !important; border-color: rgba(242,201,220,.13) !important; }
-  html[data-theme="dark"] .lk-knob { background: linear-gradient(145deg, rgba(255,235,244,.22), rgba(196,134,159,.16)) !important; border-color: rgba(255,235,244,.22) !important; }
-  html[data-theme="dark"] .chatrow .crow { background: linear-gradient(145deg, rgba(255,235,244,.12), rgba(255,180,209,.05)) !important; border-color: rgba(255,235,244,.16) !important; }
-  html[data-theme="dark"] .chatdel { background: linear-gradient(145deg, rgba(255,235,244,.09), rgba(255,180,209,.035)) !important; border-color: rgba(255,235,244,.13) !important; }
+  html[data-theme="dark"] .lk-knob { background: rgba(255,235,244,.22) !important; border-color: rgba(255,235,244,.22) !important; }
+  html[data-theme="dark"] .chatrow .crow { background: rgba(255,235,244,.12) !important; border-color: rgba(255,235,244,.16) !important; }
+  html[data-theme="dark"] .chatdel { background: rgba(255,235,244,.09) !important; border-color: rgba(255,235,244,.13) !important; }
   @media (prefers-color-scheme: dark) {
     html:not([data-theme="light"]) .lk-track { background-color: rgba(210,153,178,.07) !important; background-image: linear-gradient(90deg, rgba(255,220,235,.075) 50%, transparent 50%), linear-gradient(rgba(255,220,235,.055) 50%, transparent 50%) !important; border-color: rgba(242,201,220,.13) !important; }
-    html:not([data-theme="light"]) .lk-knob { background: linear-gradient(145deg, rgba(255,235,244,.22), rgba(196,134,159,.16)) !important; border-color: rgba(255,235,244,.22) !important; }
-    html:not([data-theme="light"]) .chatrow .crow { background: linear-gradient(145deg, rgba(255,235,244,.12), rgba(255,180,209,.05)) !important; border-color: rgba(255,235,244,.16) !important; }
-    html:not([data-theme="light"]) .chatdel { background: linear-gradient(145deg, rgba(255,235,244,.09), rgba(255,180,209,.035)) !important; border-color: rgba(255,235,244,.13) !important; }
+    html:not([data-theme="light"]) .lk-knob { background: rgba(255,235,244,.22) !important; border-color: rgba(255,235,244,.22) !important; }
+    html:not([data-theme="light"]) .chatrow .crow { background: rgba(255,235,244,.12) !important; border-color: rgba(255,235,244,.16) !important; }
+    html:not([data-theme="light"]) .chatdel { background: rgba(255,235,244,.09) !important; border-color: rgba(255,235,244,.13) !important; }
   }
 
   html[data-theme="dark"] .composer, html[data-theme="dark"] #nkPop, html[data-theme="dark"] .nk-say,
@@ -2664,14 +2689,14 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   }
   html[data-theme="dark"] .sheet .ap-b.go {
     color: #fff !important;
-    background: linear-gradient(145deg, #a6657d, #875064) !important;
+    background: #a6657d !important;
     border-color: rgba(230,166,189,.34) !important;
     box-shadow: 0 7px 18px rgba(0,0,0,.25), inset 0 1px rgba(255,255,255,.18) !important;
   }
   @media (prefers-color-scheme: dark) {
     html:not([data-theme="light"]) .sheet .ap-b.go {
       color: #fff !important;
-      background: linear-gradient(145deg, #a6657d, #875064) !important;
+      background: #a6657d !important;
       border-color: rgba(230,166,189,.34) !important;
       box-shadow: 0 7px 18px rgba(0,0,0,.25), inset 0 1px rgba(255,255,255,.18) !important;
     }
@@ -2679,11 +2704,69 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
 
   /* Header controls and composer toggles share the same quiet glass language. */
   header .iconbtn {
-    background: linear-gradient(145deg, rgba(255,255,255,.25), rgba(235,199,215,.12)) !important;
+    background: rgba(255,255,255,.25) !important;
     border-color: rgba(158,112,133,.18) !important;
     -webkit-backdrop-filter: blur(18px) saturate(1.35);
     backdrop-filter: blur(18px) saturate(1.35);
     box-shadow: 0 6px 18px rgba(79,53,66,.08), inset 0 1px rgba(255,255,255,.18) !important;
+  }
+  /* ── Range slider: strip browser chrome, draw a glass-matching track + thumb ── */
+  input[type="range"].ap-in {
+    -webkit-appearance: none; appearance: none;
+    border: 1px solid rgba(158,112,133,.15) !important;
+    outline: 0 !important;
+    padding: 0 2px; min-height: 36px; height: 36px;
+    background: rgba(255,255,255,.22) !important;
+    box-shadow: 0 4px 13px rgba(86,58,71,.045), inset 0 1px rgba(255,255,255,.14) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.25);
+    backdrop-filter: blur(18px) saturate(1.25);
+    cursor: pointer;
+  }
+  input[type="range"].ap-in:focus { box-shadow: 0 4px 13px rgba(86,58,71,.045), inset 0 1px rgba(255,255,255,.14) !important; }
+  input[type="range"].ap-in::-webkit-slider-runnable-track {
+    height: 5px; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent) var(--range-pct, 0%), rgba(158,112,133,.13) var(--range-pct, 0%));
+  }
+  input[type="range"].ap-in::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #e8b4c4;
+    border: 2px solid rgba(255,255,255,.7);
+    box-shadow: 0 2px 8px rgba(140,85,108,.22), inset 0 1px rgba(255,255,255,.4);
+    margin-top: -8.5px;
+  }
+  input[type="range"].ap-in::-moz-range-track {
+    height: 5px; border-radius: 3px; border: 0;
+    background: rgba(158,112,133,.13);
+  }
+  input[type="range"].ap-in::-moz-range-progress {
+    height: 5px; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+  }
+  input[type="range"].ap-in::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7);
+    background: #e8b4c4;
+    box-shadow: 0 2px 8px rgba(140,85,108,.22), inset 0 1px rgba(255,255,255,.4);
+  }
+  html[data-theme="dark"] input[type="range"].ap-in {
+    background: rgba(255,235,244,.09) !important;
+    border-color: rgba(242,201,220,.12) !important;
+  }
+  html[data-theme="dark"] input[type="range"].ap-in::-webkit-slider-runnable-track { background: linear-gradient(90deg, var(--accent) var(--range-pct, 0%), rgba(255,220,235,.10) var(--range-pct, 0%)); }
+  html[data-theme="dark"] input[type="range"].ap-in::-webkit-slider-thumb {
+    background: #c08a9c;
+    border-color: rgba(255,235,244,.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) input[type="range"].ap-in {
+      background: rgba(255,235,244,.09) !important;
+      border-color: rgba(242,201,220,.12) !important;
+    }
+    html:not([data-theme="light"]) input[type="range"].ap-in::-webkit-slider-runnable-track { background: linear-gradient(90deg, var(--accent) var(--range-pct, 0%), rgba(255,220,235,.10) var(--range-pct, 0%)); }
+    html:not([data-theme="light"]) input[type="range"].ap-in::-webkit-slider-thumb {
+      background: #c08a9c;
+      border-color: rgba(255,235,244,.35);
+    }
   }
   #backgroundOverlay { accent-color: var(--accent); }
   .lk-time {
@@ -2712,7 +2795,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     box-shadow: none !important;
   }
   html[data-theme="dark"] header .iconbtn {
-    background: linear-gradient(145deg, rgba(255,235,244,.12), rgba(205,145,171,.055)) !important;
+    background: rgba(255,235,244,.12) !important;
     border-color: rgba(242,201,220,.12) !important;
     box-shadow: 0 7px 20px rgba(12,8,10,.14), inset 0 1px rgba(255,235,244,.08) !important;
   }
@@ -2727,7 +2810,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   .background-preview {
     height: 176px; margin: 14px 0 16px; border-radius: 17px;
     background-color: color-mix(in srgb, var(--panel) 74%, var(--accent-soft));
-    background-image: linear-gradient(145deg, rgba(255,255,255,.18), rgba(238,196,215,.12));
+    background-image: rgba(255,255,255,.18);
     background-size: cover; background-position: center;
     border: 1px solid rgba(158,112,133,.15);
     box-shadow: inset 0 1px rgba(255,255,255,.16), 0 7px 20px rgba(86,58,71,.06);
@@ -2779,13 +2862,13 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     backdrop-filter: none;
   }
   .hrow, .hadd {
-    background: linear-gradient(145deg, rgba(255,255,255,.28), rgba(238,202,219,.12)) !important;
+    background: rgba(255,255,255,.28) !important;
     border: 1px solid rgba(158,112,133,.12);
     box-shadow: 0 5px 15px rgba(86,58,71,.045), inset 0 1px rgba(255,255,255,.13);
   }
   .hplus { border-color: rgba(158,112,133,.20); }
   html[data-theme="dark"] .hrow, html[data-theme="dark"] .hadd {
-    background: linear-gradient(145deg, rgba(255,235,244,.10), rgba(205,145,171,.04)) !important;
+    background: rgba(255,235,244,.10) !important;
     border-color: rgba(242,201,220,.10);
     box-shadow: 0 6px 18px rgba(0,0,0,.13), inset 0 1px rgba(255,235,244,.07);
   }
@@ -2799,7 +2882,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
       text-shadow: 0 1px rgba(255,255,255,.08), 0 9px 28px rgba(0,0,0,.24);
     }
     html:not([data-theme="light"]) .hrow, html:not([data-theme="light"]) .hadd {
-      background: linear-gradient(145deg, rgba(255,235,244,.10), rgba(205,145,171,.04)) !important;
+      background: rgba(255,235,244,.10) !important;
       border-color: rgba(242,201,220,.10);
       box-shadow: 0 6px 18px rgba(0,0,0,.13), inset 0 1px rgba(255,235,244,.07);
     }
@@ -3166,6 +3249,20 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   #longContextDraft, #longContextOverview { font-size: 14px; line-height: 1.55; }
   .mc-summary-history-text { font-size: 12.5px; line-height: 1.55; }
   .mc-on-demand-note { font-size: 12px; line-height: 1.55; }
+  .mc-retag { margin-top: 6px; font-size: 11.5px; color: var(--dim); }
+  .mc-used-fold { margin-bottom: 12px; }
+  .mc-used-fold > summary { color: var(--dim); font-size: 12px; cursor: pointer; padding: 4px 0; }
+  /* 设置页的滑块开关行。滑块本体复用全局的 .sw（和专注页那两个同一套）。 */
+  .mc-switch-row {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    padding: 8px 0; text-align: left; background: none; border: 0;
+    color: var(--text); font: inherit; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  }
+  .mc-switch-text { flex: 1; min-width: 0; }
+  .mc-switch-row .mc-switch-label { margin: 0; }
+  .mc-switch-hint { display: block; margin-top: 3px; font-size: 11.5px; line-height: 1.55; color: var(--dim); }
+  .mc-switch-row .sw { transition: background .28s, opacity .2s; }
   .mc-used-scroll {
     max-height: min(42dvh, 340px); overflow-y: auto; overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch; padding-right: 3px; scrollbar-gutter: stable;
@@ -3196,25 +3293,25 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
 
   /* User-tunable glass surfaces. Defaults preserve the existing Dwell material. */
   :root {
-    --interface-composer-bg: linear-gradient(145deg, rgba(255,253,254,.47), rgba(244,218,229,.20));
+    --interface-composer-bg: rgba(255,253,254,.47);
     --interface-composer-blur: 34px;
     --interface-drawer-bg: rgba(247,236,241,.51);
     --interface-drawer-blur: 10px;
-    --interface-page-sheet-bg: linear-gradient(145deg, rgba(255,253,254,.39), rgba(239,215,226,.15));
+    --interface-page-sheet-bg: rgba(255,253,254,.39);
     --interface-page-sheet-blur: 36px;
     --interface-tts-bg: color-mix(in srgb, var(--card) 88%, transparent);
     --interface-tts-blur: 18px;
   }
   html[data-theme="dark"] {
-    --interface-composer-bg: linear-gradient(145deg, rgba(92,82,89,.58), rgba(61,54,60,.34));
+    --interface-composer-bg: rgba(92,82,89,.58);
     --interface-drawer-bg: rgba(68,61,66,.60);
-    --interface-page-sheet-bg: linear-gradient(145deg, rgba(80,72,78,.56), rgba(55,49,55,.30));
+    --interface-page-sheet-bg: rgba(80,72,78,.56);
   }
   @media (prefers-color-scheme: dark) {
     html:not([data-theme="light"]) {
-      --interface-composer-bg: linear-gradient(145deg, rgba(92,82,89,.58), rgba(61,54,60,.34));
+      --interface-composer-bg: rgba(92,82,89,.58);
       --interface-drawer-bg: rgba(68,61,66,.60);
-      --interface-page-sheet-bg: linear-gradient(145deg, rgba(80,72,78,.56), rgba(55,49,55,.30));
+      --interface-page-sheet-bg: rgba(80,72,78,.56);
     }
   }
   .composer {
@@ -4378,6 +4475,19 @@ function appendMessageImages(el, images) {
   });
 }
 
+// 文件正文不进聊天记录，这里留的是「发过这个文件」这件事。
+function appendMessageFiles(el, files) {
+  (files || []).forEach(name => {
+    const text = String(name || '').trim();
+    if (!text) return;
+    const chip = document.createElement('span');
+    chip.className = 'chatfile';
+    chip.textContent = '📎 ' + text;
+    chip.title = text;
+    el.appendChild(chip);
+  });
+}
+
 function setupUserMessageFold(copy, bubble) {
   copy.classList.add('user-message-copy');
   requestAnimationFrame(() => {
@@ -4456,6 +4566,7 @@ function addMe(text, message) {
   r.appendChild(b);
   renderRich(copy);
   appendMessageImages(b, message && message.images);
+  appendMessageFiles(b, message && message.files);
   setupUserMessageFold(copy, b);
   if (message) attachMessageActions(b, message);
   scroll(true);
@@ -5414,7 +5525,10 @@ function renderSaid(msgs) {
         el.textContent = text;
         trimOrphanTail(el);            // 库里的半截消息拖着「课」这种孤尾——历史这条路也要摘
         renderRich(el);
-        if (index === segments.length - 1) appendMessageImages(el, m.images);
+        if (index === segments.length - 1) {
+          appendMessageImages(el, m.images);
+          appendMessageFiles(el, m.files);
+        }
         attachMessageActions(el, m);
         if (index === segments.length - 1) attachMessageUsage(el, m);
         guEl = null;                   // 每段各归各位，编辑时仍指向同一条原消息
@@ -5597,7 +5711,7 @@ function handle(d) {
   lastEventAt = Date.now();
   if (d.type === 'echo') {
     if (armedFresh) setArmed(false);
-    addMe(d.text, { id: d.message_id, role: 'user', text: d.text, at: d.at, images: d.images || [] });
+    addMe(d.text, { id: d.message_id, role: 'user', text: d.text, at: d.at, images: d.images || [], files: d.files || [] });
     petSet('thinking');
     return;
   }
@@ -5881,7 +5995,13 @@ function cacheGlowAnimate(end) {
   cacheGlowUpdateLabel();
 }
 
+// 这圈光画的是 5 分钟缓存的剩余时间。选 1h 或关掉缓存时它没有意义。
+function cacheGlowApplies() {
+  return curPromptCacheTtl === '5m';
+}
+
 function cacheGlowStart() {
+  if (!cacheGlowApplies()) { cacheGlowStop(true, true); return; }
   const begin = () => {
     cacheGlowEnd = Date.now() + CACHE_GLOW_MS;
     cacheGlowSave();
@@ -5918,7 +6038,9 @@ function cacheGlowStop(clearStored, quick) {
 function cacheGlowSetChat(chatId) {
   cacheGlowChatId = String(chatId || '');
   const stored = cacheGlowStored();
-  if (stored && stored.chat_id === cacheGlowChatId && Number(stored.end) > Date.now()) {
+  if (!cacheGlowApplies()) {
+    cacheGlowStop(true, true);
+  } else if (stored && stored.chat_id === cacheGlowChatId && Number(stored.end) > Date.now()) {
     cacheGlowAnimate(Number(stored.end));
   } else {
     cacheGlowStop(false, true);
@@ -9153,6 +9275,13 @@ function renderTodos(d) {
   const row = document.createElement('div');
   row.className = 'row';
   const tm = document.createElement('input'); tm.type = 'time';
+  tm.setAttribute('aria-label', '几点提醒');
+  const tmWrap = document.createElement('span');
+  tmWrap.className = 'tmwrap';
+  tmWrap.appendChild(tm);
+  const tmSync = () => tmWrap.classList.toggle('set', !!tm.value);
+  tm.addEventListener('input', tmSync);
+  tm.addEventListener('change', tmSync);
   const daily = document.createElement('button');
   daily.className = 'chip'; daily.textContent = '\u6bcf\u5929';
   let dailyOn = false;
@@ -9164,13 +9293,13 @@ function renderTodos(d) {
     if (!v) return;
     inp.value = '';
     todoAct({ action: 'add', list: 'hers', text: v, by: 'her', at: tm.value, fixed: dailyOn });
-    tm.value = ''; dailyOn = false; daily.classList.remove('on');
+    tm.value = ''; tmSync(); dailyOn = false; daily.classList.remove('on');
     add.classList.remove('open'); plus.style.display = '';
   };
   go.onclick = doAdd;
   inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) doAdd(); });
   plus.onclick = () => { add.classList.add('open'); plus.style.display = 'none'; inp.focus(); };
-  row.append(tm, daily, go);
+  row.append(tmWrap, daily, go);
   add.append(inp, row);
   c1.append(plus, add);
   todoBody.appendChild(c1);
@@ -9857,7 +9986,10 @@ function openProviderEditorPage(provider) {
     + '<div class="ap-cache-help">这里只决定怎样连接供应商；缓存时长在每间聊天的模型选择里设置。</div>'
     + '<div class="ap-lb">令牌</div>'
     + '<input class="ap-in" id="apTok" type="password" placeholder="粘贴 API 密钥">'
-    + '<div class="ap-btns single"><button class="ap-b go" id="apSave">保存供应商</button></div>'
+    + (editingProviderId
+        ? '<div class="ap-btns"><button class="ap-b danger" id="apDelete">删除供应商</button>'
+          + '<button class="ap-b go" id="apSave">保存供应商</button></div>'
+        : '<div class="ap-btns single"><button class="ap-b go" id="apSave">保存供应商</button></div>')
     + '<div class="ap-msg" id="apMsg"></div></div>';
   b.scrollTop = 0;
 
@@ -9878,6 +10010,27 @@ function openProviderEditorPage(provider) {
     msg.textContent = text;
     msg.className = 'ap-msg on' + (bad ? ' bad' : '');
   };
+  const deleteButton = document.getElementById('apDelete');
+  if (deleteButton) {
+    deleteButton.onclick = async () => {
+      if (!confirm('删掉供应商「' + (p.name || '') + '」？它保存的密钥也会一起没了。')) return;
+      deleteButton.disabled = true;
+      say('正在删除…');
+      try {
+        const response = await fetch('api/providers/' + encodeURIComponent(editingProviderId), {
+          method: 'DELETE',
+        });
+        const data = await response.json();
+        // 后端挡着：还有聊天在用这个供应商时不给删，理由照原样说给用户。
+        if (!response.ok || !data.ok) throw new Error(data.detail || '没有删掉');
+        loadApi();
+      } catch (e) {
+        deleteButton.disabled = false;
+        say('删不掉：' + e.message, true);
+      }
+    };
+  }
+
   document.getElementById('apSave').onclick = async () => {
     say('正在安全保存…');
     try {
@@ -10055,7 +10208,12 @@ function renderChatBackgroundSettings() {
   const message = body.querySelector('#backgroundMsg');
   const overlayInput = body.querySelector('#backgroundOverlay');
   const overlayValue = body.querySelector('#backgroundOverlayVal');
-  overlayInput.oninput = () => { overlayValue.textContent = applyChatBackgroundOverlay(overlayInput.value, true) + '%'; };
+  function paintRangeFill(inp) {
+    var pct = (inp.value - inp.min) / (inp.max - inp.min) * 100;
+    inp.style.setProperty('--range-pct', pct + '%');
+  }
+  overlayInput.oninput = () => { overlayValue.textContent = applyChatBackgroundOverlay(overlayInput.value, true) + '%'; paintRangeFill(overlayInput); };
+  paintRangeFill(overlayInput);
   body.querySelector('#backgroundChoose').onclick = () => input.click();
   input.onchange = async () => {
     const file = input.files && input.files[0]; if (!file) return;
@@ -10141,8 +10299,9 @@ let interfaceGlassState = readInterfaceGlass();
 function glassAlpha(value) {
   return Math.round(Math.min(1, Math.max(0, Number(value) / 100)) * 1000) / 1000;
 }
+/* 纯玻璃，不要那层渐变。tailRatio 留着不用，叫的地方没必要跟着改。 */
 function interfaceGlassGradient(colors, opacity, tailRatio) {
-  return 'linear-gradient(145deg, rgba(' + colors[0] + ',' + glassAlpha(opacity) + '), rgba(' + colors[1] + ',' + glassAlpha(opacity * tailRatio) + '))';
+  return 'rgba(' + colors[0] + ',' + glassAlpha(opacity) + ')';
 }
 function applyInterfaceGlass() {
   const mode = effectiveMessageStyleMode();
@@ -10280,7 +10439,7 @@ const MESSAGE_STYLE_CONTROLS = [
   { key: 'backgroundOpacity', label: '背景不透明度', type: 'range', min: 0, max: 100, step: 1 },
   { key: 'border', label: '边框颜色', type: 'color' },
   { key: 'borderOpacity', label: '边框不透明度', type: 'range', min: 0, max: 100, step: 1 },
-  { key: 'borderWidth', label: '边框宽度', type: 'range', min: 0, max: 3, step: .5 },
+  { key: 'borderWidth', label: '边框宽度', type: 'range', min: 0, max: 3, step: .1 },
   { key: 'text', label: '文字颜色', type: 'color' },
   { key: 'radius', label: '圆角半径', type: 'range', min: 4, max: 32, step: 1 }
 ];
@@ -10618,7 +10777,7 @@ async function currentChatForMemory() {
   return (data.items || []).find(item => item.current) || null;
 }
 function stopLongContextPoll() { if (longContextPoll) { clearTimeout(longContextPoll); longContextPoll = null; } }
-let memoryConsoleTab = 'overview';
+let memoryConsoleTab = 'cards';
 let memoryConsoleQuery = '';
 let memoryConsoleFilter = 'all';
 
@@ -10645,54 +10804,71 @@ function memoryCardForm(item, taxonomy, kind) {
     <div class="ap-msg" data-memory-msg></div>
   </form>`;
 }
-function memoryCardView(item, taxonomy, kind, recentIds) {
+let memoryCurrentChatId = '';
+// 卡片可能来自别的窗口。后端的接口是按聊天划分的，所以要发给它真正的主人，
+// 不能一律发给当前窗口——否则 404。
+function memoryCardChatId(item, chat) {
+  return (item && item.chat_id) || (chat && chat.id) || memoryCurrentChatId;
+}
+function memoryCardView(item, taxonomy, kind, recentIds, currentById) {
   const type = (taxonomy.types || {})[item.memory_type] || item.memory_type;
+  // 重新分类的建议：只改 topics，把原来的标签一并显示出来，好判断这一改值不值。
+  const retagOf = (kind === 'draft' && item.action === 'update' && currentById)
+    ? currentById[item.target_card_id] : null;
+  const topicName = topic => instructionEsc((taxonomy.topics || {})[topic] || topic);
+  const retagLine = retagOf
+    ? `<div class="mc-retag">原主题：${(retagOf.topics || []).map(topicName).join('、') || '（无）'}</div>`
+    : '';
   const topicTags = (item.topics || []).map(topic => `<span class="mc-tag">${instructionEsc((taxonomy.topics || {})[topic] || topic)}</span>`).join('');
   const importance = (taxonomy.importance || {})[item.importance] || item.importance;
   const retention = (taxonomy.retention || {})[item.retention] || item.retention;
   const until = item.valid_until ? ` · 到 ${instructionEsc(item.valid_until)}` : '';
   const hidden = item.status === 'hidden', archived = item.status === 'archived';
   const recentlyUsed = recentIds && recentIds.has(item.id);
+  // 互通开着时这里列的是整个公共池，标一下哪些是别的窗口记下的。
+  const foreign = kind === 'card' && item.chat_id && memoryCurrentChatId
+    && item.chat_id !== memoryCurrentChatId;
   let actions = '';
   if (kind === 'draft') actions = `<button class="mc-btn primary" data-memory-accept="${instructionEsc(item.id)}">采用</button><button class="mc-btn" data-memory-edit="${instructionEsc(item.id)}" data-kind="draft">先修改</button><button class="mc-btn quiet" data-memory-discard="${instructionEsc(item.id)}">忽略</button>`;
   else if (kind === 'used') actions = '';
   else if (archived) actions = `<button class="mc-btn" data-memory-restore="${instructionEsc(item.id)}">恢复</button><button class="mc-btn quiet danger" data-memory-delete-permanent="${instructionEsc(item.id)}">永久删除</button>`;
   else actions = `<button class="mc-btn" data-memory-edit="${instructionEsc(item.id)}" data-kind="card">编辑</button><button class="mc-btn quiet" data-memory-toggle="${instructionEsc(item.id)}" data-status="${hidden ? 'active' : 'hidden'}">${hidden ? '重新启用' : '暂时隐藏'}</button><button class="mc-btn quiet danger" data-memory-archive="${instructionEsc(item.id)}">归档</button>`;
-  return `<article class="mc-card${hidden ? ' hidden' : ''}${kind === 'used' ? ' mc-used' : ''}" data-memory-item="${instructionEsc(item.id)}"><div class="mc-card-view"><div class="mc-card-head"><div class="mc-content">${instructionEsc(item.content || '')}</div><span class="mc-badge">${instructionEsc(type)}</span></div><div class="mc-meta">${topicTags}<span class="mc-tag">${instructionEsc(importance)}</span><span class="mc-tag">${instructionEsc(retention)}${until}</span>${hidden ? '<span class="mc-tag">已隐藏</span>' : ''}${recentlyUsed ? '<span class="mc-tag">最近带入</span>' : ''}</div><div class="mc-source">${kind === 'used' ? '这是 AI 在那一轮实际看到的版本' : instructionEsc(memorySource(item))}</div>${actions ? `<div class="mc-actions">${actions}</div>` : ''}</div></article>`;
+  return `<article class="mc-card${hidden ? ' hidden' : ''}${kind === 'used' ? ' mc-used' : ''}" data-memory-item="${instructionEsc(item.id)}"><div class="mc-card-view"><div class="mc-card-head"><div class="mc-content">${instructionEsc(item.content || '')}</div>${kind !== 'used' ? `<span class="mc-badge">${instructionEsc(type)}</span>` : ''}</div><div class="mc-meta">${topicTags}<span class="mc-tag">${instructionEsc(importance)}</span><span class="mc-tag">${instructionEsc(retention)}${until}</span>${hidden ? '<span class="mc-tag">已隐藏</span>' : ''}${foreign ? `<span class="mc-tag">来自 ${instructionEsc(item.chat_name || '别的窗口')}</span>` : ''}${recentlyUsed ? '<span class="mc-tag">最近带入</span>' : ''}${retagOf ? '<span class="mc-tag">重新分类</span>' : ''}</div>${retagLine}${kind !== 'used' ? `<div class="mc-source">${instructionEsc(memorySource(item))}</div>` : ''}${actions ? `<div class="mc-actions">${actions}</div>` : ''}</div></article>`;
 }
 function memoryEmpty(title, text, button) {
   return `<div class="mc-empty"><strong>${instructionEsc(title)}</strong>${instructionEsc(text)}${button || ''}</div>`;
 }
-function memoryOverviewHtml(state, modelState, cardState) {
+function memorySwitchRow(label, hint, id, on) {
+  return `<button class="mc-switch-row" id="${id}" type="button" aria-pressed="${on ? 'true' : 'false'}">`
+    + `<span class="mc-switch-text"><span class="ap-section-title mc-switch-label">${label}</span>`
+    + (hint ? `<small class="mc-switch-hint">${hint}</small>` : '')
+    + `</span><span class="sw${on ? ' on' : ''}"></span></button>`;
+}
+
+function memorySummaryHtml(state) {
   const working = state.status === 'queued' || state.status === 'running';
   const reviewing = !!state.has_draft;
-  const generated = state.generated_at ? memoryDate(state.generated_at) : '尚未保存';
+  const generated = state.generated_at ? memoryDate(state.generated_at) : '还未生成';
   const draftGenerated = state.draft_generated_at ? memoryDate(state.draft_generated_at) : '';
-  const status = working ? '正在整理。完成后只会生成待确认草稿。' : reviewing ? '有一份新摘要等待确认；当前仍使用原来的正式摘要。' : state.status === 'error' ? ('没有生成成功：' + (state.error || '未知错误')) : (state.overview ? '正式摘要已启用。只有点击更新摘要时才会重新整理。' : '还没有正式摘要；摘要只会在你点击生成时整理。');
-  const modelOptions = (modelState.items || []).map(item => `<option value="${instructionEsc(item.provider_id)}::${instructionEsc(item.model_id)}" ${(item.provider_id === modelState.provider_id && item.model_id === modelState.model_id) ? 'selected' : ''}>${instructionEsc(item.provider_name || '供应商')} · ${instructionEsc(item.model_id)}</option>`).join('');
-  const versions = (state.versions || []).map(item => `<details class="mc-summary-history" style="margin-top:10px"><summary>${instructionEsc(memoryDate(item.made) || '较早版本')} · ${instructionEsc(item.reason || '历史版本')}</summary><div class="gnote mc-summary-history-text" style="white-space:pre-wrap;margin-top:8px;max-height:260px;overflow:auto">${instructionEsc(item.overview || '')}</div><div class="mc-actions"><button class="mc-btn longContextRestore" data-version="${instructionEsc(item.id)}">恢复这一版</button></div></details>`).join('');
+  const status = working ? '正在整理。完成后只会生成待确认草稿。' : reviewing ? '有一份新摘要等待确认，当前仍使用原来的正式摘要。' : state.status === 'error' ? ('没有生成成功：' + (state.error || '未知错误')) : (state.overview ? '正式摘要已启用。只有点击更新摘要时才会重新整理。' : '还没有正式摘要；摘要只会在你点击生成时整理。');
+  const versions = (state.versions || []).map(item => `<details class="mc-summary-history" style="margin-top:10px"><summary>${instructionEsc(memoryDate(item.made) || '历史版本')} · ${instructionEsc(item.reason || '历史版本')}</summary><div class="gnote mc-summary-history-text" style="white-space:pre-wrap;margin-top:8px;max-height:260px;overflow:auto">${instructionEsc(item.overview || '')}</div><div class="mc-actions"><button class="mc-btn longContextRestore" data-version="${instructionEsc(item.id)}">恢复这一版</button></div></details>`).join('');
   const blocked = working || reviewing;
-  const lastUse = cardState.last_injection;
-  const usedCards = lastUse && lastUse.items && lastUse.items.length ? `<div class="mc-stack mc-used-scroll" style="margin-top:12px">${lastUse.items.map(item=>memoryCardView(item,cardState.taxonomy,'used')).join('')}</div>` : '';
-  return `<div class="ap-section"><div class="ap-section-title">按需记忆</div><div class="gnote mc-on-demand-note">${cardState.injection_enabled ? '已开启。每次回复只会挑最多 5 条真正相关的卡片；不相关时一条也不会带入。每累计 50 条旧消息会自动生成待确认记忆卡。' : '已暂停带入，但每累计 50 条旧消息仍会自动生成待确认记忆卡。'}</div><div class="mc-actions"><button class="mc-btn ${cardState.injection_enabled ? 'quiet' : 'primary'}" id="memoryInjectionToggle">${cardState.injection_enabled ? '暂停按需记忆' : '开启按需记忆'}</button></div>${lastUse ? `<div class="mc-section-title">最近一次带入 · ${instructionEsc(memoryDate(lastUse.used_at))} · ${lastUse.items.length} 条</div>${usedCards}` : '<div class="gnote">还没有带入记录。下一次聊到与卡片相关的话题时，这里会显示 AI 实际看到的内容。</div>'}</div>
-    <div class="ap-section"><div class="ap-section-title">摘要状态</div><div class="gnote">${instructionEsc(status)}</div><div class="gnote">原消息 ${state.message_count} 条 · 已压缩 ${state.segment_count} 段 · 最近 ${state.tail_messages} 条保留原文</div><div class="gnote">正式摘要最近保存：${instructionEsc(generated)}</div></div>
-    <div class="ap-section"><div class="ap-section-title">整理所用模型</div>${modelOptions ? `<select class="ap-in" id="longContextModel" style="margin-top:10px">${modelOptions}</select><div class="ap-msg" id="longContextModelMsg"></div>` : '<div class="gnote">还没有可选模型。先在设置里为供应商添加模型。</div>'}</div>
+  return `<div class="ap-section"><div class="ap-section-title">状态</div><div class="gnote">${instructionEsc(status)}</div><div class="gnote">原消息 ${state.message_count} 条 · 已压缩 ${state.segment_count} 段 · 最近 ${state.tail_messages} 条保留原文</div><div class="gnote">正式摘要最近保存：${instructionEsc(generated)}</div></div>
     <div class="mc-actions${state.enabled ? ' mc-summary-primary-actions' : ''}"><button class="mc-btn primary" id="longContextGenerate" ${blocked ? 'disabled' : ''}>${reviewing ? '先处理待确认摘要' : (state.overview ? '更新摘要' : '生成摘要')}</button>${state.enabled ? `<button class="mc-btn" id="longContextRebuild" ${blocked ? 'disabled' : ''}>从原文重建</button>` : ''}</div><div class="ap-msg" id="longContextMsg"></div>
     ${reviewing ? `<div class="ap-section mc-summary"><div class="ap-section-title">待确认的新摘要</div><div class="gnote">生成于 ${instructionEsc(draftGenerated)}。采用前不会影响正式摘要。</div><textarea class="ap-in" id="longContextDraft" maxlength="12000">${instructionEsc(state.draft_overview || '')}</textarea><div class="mc-actions"><button class="mc-btn primary" id="longContextAccept">采用这份摘要</button><button class="mc-btn quiet danger" id="longContextDiscard">丢弃</button></div></div>` : ''}
     ${state.overview ? `<div class="ap-section mc-summary"><div class="ap-section-title">正在使用的正式摘要</div><div class="gnote">可以直接校订；保存前会自动留下旧版本。</div><textarea class="ap-in" id="longContextOverview" maxlength="12000">${instructionEsc(state.overview)}</textarea><div class="mc-actions"><button class="mc-btn primary" id="longContextSave">保存修改</button></div></div>` : ''}
     ${versions ? `<div class="ap-section"><div class="ap-section-title">摘要历史（${state.version_count || 0}）</div>${versions}</div>` : ''}`;
 }
-function memoryReadForm(form) {
-  const topics = [...form.querySelectorAll('.mc-topic input:checked')].map(input => input.value);
-  return {content:form.elements.content.value.trim(),memory_type:form.elements.memory_type.value,topics,importance:form.elements.importance.value,retention:form.elements.retention.value,valid_until:form.elements.valid_until.value || null};
+
+function memorySettingsHtml(modelState, cardState) {
+  const modelOptions = (modelState.items || []).filter(item => item.favorite).map(item => `<option value="${instructionEsc(item.provider_id)}::${instructionEsc(item.model_id)}" ${(item.provider_id === modelState.provider_id && item.model_id === modelState.model_id) ? 'selected' : ''}>${instructionEsc(item.provider_name || '供应商')} · ${instructionEsc(item.model_id)}</option>`).join('');
+  return `<div class="ap-section">`
+    + memorySwitchRow('按需记忆', '每次回复只挑最多 5 条真正相关的卡片；不相关时一条也不会带入。', 'memoryInjectionToggle', cardState.injection_enabled)
+    + `<div class="gnote">${cardState.injection_enabled ? '每累计 50 条旧消息会自动生成待确认记忆卡。' : '已暂停带入，但每累计 50 条旧消息仍会自动生成待确认记忆卡。'}</div></div>`
+    + `<div class="ap-section"><div class="ap-section-title">整理所用模型</div><div class="gnote">用来压缩长期摘要、生成记忆卡草稿。</div>${modelOptions ? `<select class="ap-in" id="longContextModel" style="margin-top:10px">${modelOptions}</select><div class="ap-msg" id="longContextModelMsg"></div>` : '<div class="gnote">还没有常用模型。先在设置里把模型加入常用。</div>'}</div>`;
 }
-async function memoryJson(url, options) {
-  const response = await fetch(url, options);
-  const data = await response.json();
-  if (!response.ok || !data.ok) throw new Error(data.detail || '操作没有完成');
-  return data;
-}
-function wireMemoryOverview(chat, state, cardState) {
+
+function wireMemorySummary(chat, state) {
   const startUpdate = async reset => {
     const msg = document.getElementById('longContextMsg');
     if (reset && !confirm('从原聊天记录重新生成待确认摘要？当前正式摘要不会删除。')) return;
@@ -10703,49 +10879,114 @@ function wireMemoryOverview(chat, state, cardState) {
   const blocked = state.status === 'queued' || state.status === 'running' || state.has_draft;
   const generate = document.getElementById('longContextGenerate'); if (generate && !blocked) generate.onclick = () => startUpdate(false);
   const rebuild = document.getElementById('longContextRebuild'); if (rebuild && !blocked) rebuild.onclick = () => startUpdate(true);
-  const model = document.getElementById('longContextModel'); if (model) model.onchange = async () => { const msg = document.getElementById('longContextModelMsg'); const [provider_id, model_id] = model.value.split('::'); msg.textContent='正在保存…'; msg.className='ap-msg on'; try { await memoryJson('api/long-context-model',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider_id,model_id})}); msg.textContent='之后会用这台模型整理。'; } catch(e) { msg.textContent='没有保存：'+e.message; msg.className='ap-msg on bad'; } };
   const save = document.getElementById('longContextSave'); if (save) save.onclick = async () => { const msg=document.getElementById('longContextMsg'); try { await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/long-context',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({overview:document.getElementById('longContextOverview').value})}); msg.textContent='已保存，并留下修改前的版本。'; msg.className='ap-msg on'; setTimeout(loadLongContext,500); } catch(e) { msg.textContent='没有保存：'+e.message; msg.className='ap-msg on bad'; } };
   const accept = document.getElementById('longContextAccept'); if (accept) accept.onclick = async () => { if (!confirm('采用这份摘要？当前版本会保留在历史记录中。')) return; try { await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/long-context',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({overview:document.getElementById('longContextDraft').value,accept_draft:true})}); loadLongContext(); } catch(e) { alert('没有采用：'+e.message); } };
   const discard = document.getElementById('longContextDiscard'); if (discard) discard.onclick = async () => { if (!confirm('丢弃待确认摘要？正式摘要不会改变。')) return; try { await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/long-context/draft',{method:'DELETE'}); loadLongContext(); } catch(e) { alert('没有丢弃：'+e.message); } };
   document.querySelectorAll('.longContextRestore').forEach(button => button.onclick = async () => { if (!confirm('恢复这一版摘要？当前正式摘要也会先保存。')) return; try { await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/long-context/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({version_id:button.dataset.version})}); loadLongContext(); } catch(e) { alert('没有恢复：'+e.message); } });
-  const injection=document.getElementById('memoryInjectionToggle'); if(injection)injection.onclick=async()=>{injection.disabled=true;try{await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-cards/injection',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:!cardState.injection_enabled})});loadLongContext();}catch(e){injection.disabled=false;alert('没有切换：'+e.message);}};
+}
+
+/* 滑块开关：点下去先把滑块推过去再发请求，手感即时；失败就推回来。
+   三件事保手感：当前状态记在本地变量里（连点两下也对）、请求慢过 400ms 才变淡（快的时候不闪）、成功只静默刷新不清空面板。 */
+function wireMemorySwitch(id, enabled, send) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  let current = !!enabled, busy = false;
+  row.onclick = async () => {
+    if (busy) return;
+    busy = true;
+    const sw = row.querySelector('.sw'), next = !current;
+    sw.classList.toggle('on', next);
+    row.setAttribute('aria-pressed', next ? 'true' : 'false');
+    const dim = setTimeout(() => sw.classList.add('wait'), 400);
+    try { await send(next); current = next; loadLongContext(true); }
+    catch (e) {
+      sw.classList.toggle('on', current);
+      row.setAttribute('aria-pressed', current ? 'true' : 'false');
+      alert('没有切换：' + e.message);
+    }
+    finally { clearTimeout(dim); sw.classList.remove('wait'); busy = false; }
+  };
+}
+
+function wireMemorySettings(chat, cardState) {
+  wireMemorySwitch('memoryInjectionToggle', !!cardState.injection_enabled, next =>
+    memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-cards/injection',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:next})}));
+  const model = document.getElementById('longContextModel'); if (model) model.onchange = async () => { const msg = document.getElementById('longContextModelMsg'); const [provider_id, model_id] = model.value.split('::'); msg.textContent='正在保存…'; msg.className='ap-msg on'; try { await memoryJson('api/long-context-model',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider_id,model_id})}); msg.textContent='之后会用这台模型整理。'; } catch(e) { msg.textContent='没有保存：'+e.message; msg.className='ap-msg on bad'; } };
+}
+
+function memoryReadForm(form) {
+  const topics = [...form.querySelectorAll('.mc-topic input:checked')].map(input => input.value);
+  return {content:form.elements.content.value.trim(),memory_type:form.elements.memory_type.value,topics,importance:form.elements.importance.value,retention:form.elements.retention.value,valid_until:form.elements.valid_until.value || null};
+}
+async function memoryJson(url, options) {
+  const response = await fetch(url, options);
+  const data = await response.json();
+  if (!response.ok || !data.ok) throw new Error(data.detail || '操作没有完成');
+  return data;
+}
+function memoryCardReplace(card, item, taxonomy, kind, recentIds) {
+  var tmp = document.createElement('div');
+  tmp.innerHTML = memoryCardView(item, taxonomy, kind, recentIds);
+  card.className = tmp.firstElementChild.className;
+  card.innerHTML = tmp.firstElementChild.innerHTML;
+  fillIcons(card);
+}
+function updateMemoryTabCount(tabKey, delta) {
+  var tab = document.querySelector('[data-memory-tab="' + tabKey + '"]');
+  if (!tab) return;
+  var count = tab.querySelector('.mc-count');
+  if (count) count.textContent = Math.max(0, (parseInt(count.textContent, 10) || 0) + delta);
+}
+function removeMemoryCard(card, tabKey) {
+  card.style.transition = 'opacity 200ms ease, transform 200ms ease';
+  card.style.opacity = '0'; card.style.transform = 'scale(.96)';
+  setTimeout(function() { card.remove(); }, 200);
+  if (tabKey) updateMemoryTabCount(tabKey, -1);
 }
 function wireMemoryCards(chat, cardState, allItems) {
   document.querySelectorAll('[data-memory-edit]').forEach(button => button.onclick = () => { const item=[...(cardState.drafts||[]),...allItems].find(value=>value.id===button.dataset.memoryEdit); const card=button.closest('.mc-card'); card.innerHTML=memoryCardForm(item,cardState.taxonomy,button.dataset.kind); wireMemoryCards(chat,cardState,allItems); });
-  document.querySelectorAll('[data-memory-cancel]').forEach(button => button.onclick = loadLongContext);
-  document.querySelectorAll('[data-memory-form]').forEach(form => { form.querySelectorAll('.mc-topic input').forEach(input => input.onchange=()=>{ if(form.querySelectorAll('.mc-topic input:checked').length>3){ input.checked=false; const msg=form.querySelector('[data-memory-msg]'); msg.textContent='一条记忆最多选 3 个主题。'; msg.className='ap-msg on bad'; } }); form.onsubmit=async event=>{ event.preventDefault(); const msg=form.querySelector('[data-memory-msg]'); const payload=memoryReadForm(form); if(!payload.content){msg.textContent='记忆内容不能为空。';msg.className='ap-msg on bad';return;} msg.textContent='正在保存…';msg.className='ap-msg on'; try { const base='api/chats/'+encodeURIComponent(chat.id); const url=form.dataset.kind==='draft'?base+'/memory-card-drafts/'+encodeURIComponent(form.dataset.memoryForm)+'/accept':base+'/memory-cards/'+encodeURIComponent(form.dataset.memoryForm); await memoryJson(url,{method:form.dataset.kind==='draft'?'POST':'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); loadLongContext(); } catch(e){msg.textContent='没有保存：'+e.message;msg.className='ap-msg on bad';} }; });
-  document.querySelectorAll('[data-memory-accept]').forEach(button => button.onclick=async()=>{ button.disabled=true; try { await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-card-drafts/'+encodeURIComponent(button.dataset.memoryAccept)+'/accept',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); loadLongContext(); } catch(e){button.disabled=false;alert('没有采用：'+e.message);} });
-  document.querySelectorAll('[data-memory-discard]').forEach(button => button.onclick=async()=>{ if(!confirm('忽略这条候选记忆？'))return; try{await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-card-drafts/'+encodeURIComponent(button.dataset.memoryDiscard),{method:'DELETE'});loadLongContext();}catch(e){alert('没有忽略：'+e.message);} });
-  document.querySelectorAll('[data-memory-toggle]').forEach(button => button.onclick=async()=>{ const item=allItems.find(value=>value.id===button.dataset.memoryToggle); try{await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-cards/'+encodeURIComponent(item.id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...item,status:button.dataset.status})});loadLongContext();}catch(e){alert('没有修改：'+e.message);} });
-  document.querySelectorAll('[data-memory-archive]').forEach(button => button.onclick=async()=>{ if(!confirm('把这条记忆移到归档？之后仍可恢复。'))return; try{await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-cards/'+encodeURIComponent(button.dataset.memoryArchive),{method:'DELETE'});loadLongContext();}catch(e){alert('没有归档：'+e.message);} });
-  document.querySelectorAll('[data-memory-restore]').forEach(button => button.onclick=async()=>{ const item=allItems.find(value=>value.id===button.dataset.memoryRestore); try{await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-cards/'+encodeURIComponent(item.id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...item,status:'active'})});loadLongContext();}catch(e){alert('没有恢复：'+e.message);} });
-  document.querySelectorAll('[data-memory-delete-permanent]').forEach(button => button.onclick=async()=>{ if(!confirm('永久删除这张记忆卡？删除后无法恢复，与它关联的带入记录也会一起清除。'))return; button.disabled=true; try{await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-cards/'+encodeURIComponent(button.dataset.memoryDeletePermanent)+'/permanent',{method:'DELETE'});loadLongContext();}catch(e){button.disabled=false;alert('没有永久删除：'+e.message);} });
+  document.querySelectorAll('[data-memory-cancel]').forEach(button => button.onclick = () => { const form=button.closest('[data-memory-form]'); const item=[...(cardState.drafts||[]),...allItems].find(v=>v.id===form.dataset.memoryForm); const card=button.closest('.mc-card'); if(item){memoryCardReplace(card,item,cardState.taxonomy,form.dataset.kind==='draft'?'draft':'card');wireMemoryCards(chat,cardState,allItems);}else{loadLongContext();} });
+  document.querySelectorAll('[data-memory-form]').forEach(form => { form.querySelectorAll('.mc-topic input').forEach(input => input.onchange=()=>{ if(form.querySelectorAll('.mc-topic input:checked').length>3){ input.checked=false; const msg=form.querySelector('[data-memory-msg]'); msg.textContent='一条记忆最多选 3 个主题。'; msg.className='ap-msg on bad'; } }); form.onsubmit=async event=>{ event.preventDefault(); const msg=form.querySelector('[data-memory-msg]'); const payload=memoryReadForm(form); if(!payload.content){msg.textContent='记忆内容不能为空。';msg.className='ap-msg on bad';return;} msg.textContent='正在保存…';msg.className='ap-msg on'; try { const editing=form.dataset.kind==='draft'?null:allItems.find(v=>v.id===form.dataset.memoryForm);const base='api/chats/'+encodeURIComponent(memoryCardChatId(editing,chat)); const url=form.dataset.kind==='draft'?base+'/memory-card-drafts/'+encodeURIComponent(form.dataset.memoryForm)+'/accept':base+'/memory-cards/'+encodeURIComponent(form.dataset.memoryForm); await memoryJson(url,{method:form.dataset.kind==='draft'?'POST':'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const card=form.closest('.mc-card'); if(form.dataset.kind==='draft'){removeMemoryCard(card,'review');updateMemoryTabCount('cards',1);}else{const item=allItems.find(v=>v.id===form.dataset.memoryForm);if(item)Object.assign(item,payload);memoryCardReplace(card,item||payload,cardState.taxonomy,'card');wireMemoryCards(chat,cardState,allItems);} } catch(e){msg.textContent='没有保存：'+e.message;msg.className='ap-msg on bad';} }; });
+  document.querySelectorAll('[data-memory-accept]').forEach(button => button.onclick=async()=>{ button.disabled=true; try { await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-card-drafts/'+encodeURIComponent(button.dataset.memoryAccept)+'/accept',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}); removeMemoryCard(button.closest('.mc-card'),'review');updateMemoryTabCount('cards',1); } catch(e){button.disabled=false;alert('没有采用：'+e.message);} });
+  document.querySelectorAll('[data-memory-discard]').forEach(button => button.onclick=async()=>{ if(!confirm('忽略这条候选记忆？'))return; try{await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-card-drafts/'+encodeURIComponent(button.dataset.memoryDiscard),{method:'DELETE'});removeMemoryCard(button.closest('.mc-card'),'review');}catch(e){alert('没有忽略：'+e.message);} });
+  document.querySelectorAll('[data-memory-toggle]').forEach(button => button.onclick=async()=>{ const item=allItems.find(value=>value.id===button.dataset.memoryToggle); try{await memoryJson('api/chats/'+encodeURIComponent(memoryCardChatId(item,chat))+'/memory-cards/'+encodeURIComponent(item.id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...item,status:button.dataset.status})});item.status=button.dataset.status;const card=button.closest('.mc-card');memoryCardReplace(card,item,cardState.taxonomy,'card');wireMemoryCards(chat,cardState,allItems);}catch(e){alert('没有修改：'+e.message);} });
+  document.querySelectorAll('[data-memory-archive]').forEach(button => button.onclick=async()=>{ if(!confirm('把这条记忆移到归档？之后仍可恢复。'))return; const item=allItems.find(value=>value.id===button.dataset.memoryArchive); try{await memoryJson('api/chats/'+encodeURIComponent(memoryCardChatId(item,chat))+'/memory-cards/'+encodeURIComponent(button.dataset.memoryArchive),{method:'DELETE'});removeMemoryCard(button.closest('.mc-card'),'cards');updateMemoryTabCount('archive',1);}catch(e){alert('没有归档：'+e.message);} });
+  document.querySelectorAll('[data-memory-restore]').forEach(button => button.onclick=async()=>{ const item=allItems.find(value=>value.id===button.dataset.memoryRestore); try{await memoryJson('api/chats/'+encodeURIComponent(memoryCardChatId(item,chat))+'/memory-cards/'+encodeURIComponent(item.id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...item,status:'active'})});removeMemoryCard(button.closest('.mc-card'),'archive');updateMemoryTabCount('cards',1);}catch(e){alert('没有恢复：'+e.message);} });
+  document.querySelectorAll('[data-memory-delete-permanent]').forEach(button => button.onclick=async()=>{ if(!confirm('永久删除这张记忆卡？删除后无法恢复，与它关联的带入记录也会一起清除。'))return; const item=allItems.find(value=>value.id===button.dataset.memoryDeletePermanent); button.disabled=true; try{await memoryJson('api/chats/'+encodeURIComponent(memoryCardChatId(item,chat))+'/memory-cards/'+encodeURIComponent(button.dataset.memoryDeletePermanent)+'/permanent',{method:'DELETE'});removeMemoryCard(button.closest('.mc-card'),'archive');}catch(e){button.disabled=false;alert('没有永久删除：'+e.message);} });
 }
-async function loadLongContext() {
-  const body=document.getElementById('longContextBody'); stopLongContextPoll(); body.innerHTML='<div class="gnote">正在打开记忆控制台…</div>';
+async function loadLongContext(quiet) {
+  const body=document.getElementById('longContextBody'); stopLongContextPoll();
+  /* quiet：开关这种原地改动不清空面板。清空再重建就是「点一下慢半拍」的来源。 */
+  const keepScroll = quiet ? body.scrollTop : 0;
+  if(!quiet) body.innerHTML='<div class="gnote">正在打开记忆控制台…</div>';
   try {
     const chat=await currentChatForMemory(); if(!chat){body.innerHTML=memoryEmpty('还没有打开聊天','先打开一间聊天，再回来管理它的记忆。');return;}
+    memoryCurrentChatId=chat.id;   // 卡片可能来自别的窗口，靠它认出哪些是外来的
     const [summaryResponse,modelResponse,cardsResponse]=await Promise.all([fetch('api/chats/'+encodeURIComponent(chat.id)+'/long-context',{cache:'no-store'}),fetch('api/long-context-model',{cache:'no-store'}),fetch('api/chats/'+encodeURIComponent(chat.id)+'/memory-cards?include_archived=true',{cache:'no-store'})]);
     const summary=await summaryResponse.json(), model=await modelResponse.json(), cards=await cardsResponse.json();
     if(!summaryResponse.ok||!summary.ok)throw new Error(summary.detail||'摘要没有读取到'); if(!modelResponse.ok||!model.ok)throw new Error(model.detail||'模型没有读取到'); if(!cardsResponse.ok||!cards.ok)throw new Error(cards.detail||'记忆卡没有读取到');
     const active=(cards.items||[]).filter(item=>item.status!=='archived'), archived=(cards.items||[]).filter(item=>item.status==='archived'), drafts=cards.drafts||[], cardWorking=cards.state&&['queued','running'].includes(cards.state.status);
     const recentIds=new Set(((cards.last_injection||{}).items||[]).map(item=>item.id));
-    const tabs=[['overview','总览',''],['review','待确认',drafts.length],['cards','记忆卡',active.length],['archive','归档',archived.length]];
+    const cardById=Object.fromEntries((cards.items||[]).map(item=>[item.id,item]));
+    const tabs=[['cards','记忆卡',active.length],['review','待确认',drafts.length],['summary','摘要',''],['settings','设置','']];
     const tabHtml=tabs.map(([id,label,count])=>`<button class="mc-tab" role="tab" aria-selected="${memoryConsoleTab===id}" data-memory-tab="${id}">${label}${count!==''?`<span class="mc-count">${count}</span>`:''}</button>`).join('');
     let panel='';
-    if(memoryConsoleTab==='overview') panel=memoryOverviewHtml(summary,model,cards);
-    if(memoryConsoleTab==='review') panel=`<div class="mc-toolbar"><button class="mc-btn primary" id="memoryGenerate" ${cardWorking?'disabled':''}>${cardWorking?'正在整理…':'生成未处理分段的记忆卡草稿'}</button>${drafts.length?`<button class="mc-btn" id="memoryAcceptAll" ${cardWorking?'disabled':''}>采用全部（${drafts.length}）</button>`:''}</div>${cards.state&&cards.state.error?`<div class="ap-msg on bad">${instructionEsc(cards.state.error)}</div>`:''}${drafts.length?`<div class="mc-stack">${drafts.map(item=>memoryCardView(item,cards.taxonomy,'draft')).join('')}</div>`:memoryEmpty(cardWorking?'正在整理候选':'没有待确认内容',cardWorking?'完成后会自动出现在这里。':'可以让模型检查尚未处理的新分段；任何候选都要由你逐条采用。')}`;
-    if(memoryConsoleTab==='cards') panel=`<div class="mc-toolbar"><input class="ap-in" id="memorySearch" type="search" placeholder="搜索记忆内容" value="${instructionEsc(memoryConsoleQuery)}"><select class="ap-in" id="memoryFilter"><option value="all">全部状态</option><option value="active" ${memoryConsoleFilter==='active'?'selected':''}>可被挑选</option><option value="hidden" ${memoryConsoleFilter==='hidden'?'selected':''}>已隐藏</option><option value="high" ${memoryConsoleFilter==='high'?'selected':''}>固定保留</option></select></div>${active.length?`<div class="mc-stack">${active.map(item=>memoryCardView(item,cards.taxonomy,'card',recentIds)).join('')}</div><div class="mc-empty" id="memoryFilteredEmpty" hidden><strong>没有符合条件的记忆</strong>换个关键词或筛选条件看看。</div>`:memoryEmpty('还没有正式记忆卡','先到“待确认”生成候选，并逐条采用。')}`;
-    if(memoryConsoleTab==='archive') panel=archived.length?`<div class="mc-stack">${archived.map(item=>memoryCardView(item,cards.taxonomy,'card')).join('')}</div>`:memoryEmpty('归档是空的','归档后的记忆会留在这里，可以随时恢复。');
-    body.innerHTML=`<div class="mc-intro"><h1>${instructionEsc(chat.name||'新对话')}</h1><p>总览维持对话的连续性；记忆卡把重要细节拆成可以管理的小条目。</p><div class="mc-safety${cards.injection_enabled?'':' off'}"><span class="ic" data-i="${cards.injection_enabled?'check':'x'}"></span><span>${cards.injection_enabled?'按需记忆已开启：每轮最多带入 5 条相关卡片；隐藏、归档和过期内容会自动排除。':'按需记忆已暂停：AI 仍会看到长期摘要和最近原文，但不会看到记忆卡。'}</span></div></div><div class="mc-tabs" role="tablist" aria-label="记忆管理">${tabHtml}</div><section class="mc-panel" role="tabpanel">${panel}</section>`;
+    if(memoryConsoleTab==='summary') panel=memorySummaryHtml(summary);
+    if(memoryConsoleTab==='settings') panel=memorySettingsHtml(model,cards);
+    if(memoryConsoleTab==='review') panel=`<div class="mc-toolbar"><button class="mc-btn primary" id="memoryGenerate" ${cardWorking?'disabled':''}>${cardWorking?'正在整理…':'生成未处理分段的记忆卡草稿'}</button>${drafts.length?`<button class="mc-btn" id="memoryAcceptAll" ${cardWorking?'disabled':''}>采用全部（${drafts.length}）</button>`:''}</div>${cards.state&&cards.state.error?`<div class="ap-msg on bad">${instructionEsc(cards.state.error)}</div>`:''}${(cards.state&&cards.state.note&&!cards.state.error)?`<div class="ap-msg on">${instructionEsc(cards.state.note)}</div>`:''}${drafts.length?`<div class="mc-stack">${drafts.map(item=>memoryCardView(item,cards.taxonomy,'draft',null,cardById)).join('')}</div>`:memoryEmpty(cardWorking?'正在整理候选':'没有待确认内容',cardWorking?'完成后会自动出现在这里。':'可以让模型检查尚未处理的新分段；任何候选都要由你逐条采用。')}`;
+    if(memoryConsoleTab==='cards') panel=`${(()=>{ const lastUse=cards.last_injection; if(!lastUse||!(lastUse.items||[]).length) return ''; /* 最近一次带入是「结果」不是设置：放记忆卡顶上，折叠着不挡翻卡 */ return `<details class="mc-used-fold"><summary>最近一次带入 · ${instructionEsc(memoryDate(lastUse.used_at))} · ${lastUse.items.length} 条</summary><div class="mc-stack mc-used-scroll" style="margin-top:10px">${lastUse.items.map(item=>memoryCardView(item,cards.taxonomy,'used')).join('')}</div></details>`; })()}<div class="mc-toolbar"><input class="ap-in" id="memorySearch" type="search" placeholder="搜索记忆内容" value="${instructionEsc(memoryConsoleQuery)}"><select class="ap-in" id="memoryFilter"><option value="all">全部状态</option><option value="active" ${memoryConsoleFilter==='active'?'selected':''}>可被挑选</option><option value="hidden" ${memoryConsoleFilter==='hidden'?'selected':''}>已隐藏</option><option value="high" ${memoryConsoleFilter==='high'?'selected':''}>固定保留</option><option value="archived" ${memoryConsoleFilter==='archived'?'selected':''}>已归档（${archived.length}）</option></select></div>${(active.length||archived.length)?`<div class="mc-stack">${active.concat(archived).map(item=>memoryCardView(item,cards.taxonomy,'card',recentIds)).join('')}</div><div class="mc-empty" id="memoryFilteredEmpty" hidden><strong>没有符合条件的记忆</strong>换个关键词或筛选条件看看。</div>`:memoryEmpty('还没有正式记忆卡','先到“待确认”生成候选，并逐条采用。')}`;
+    
+    body.innerHTML=`<div class="mc-intro"><h1>${instructionEsc(chat.name||'新对话')}</h1><p>记忆卡把重要细节拆成可以管理的小条目；摘要维持对话的连续性。</p><div class="mc-safety${cards.injection_enabled?'':' off'}"><span class="ic" data-i="${cards.injection_enabled?'check':'x'}"></span><span>${cards.injection_enabled?'按需记忆已开启：每轮最多带入 5 条相关卡片；隐藏、归档和过期内容会自动排除。':'按需记忆已暂停：AI 仍会看到长期摘要和最近原文，但不会看到记忆卡。'}</span></div></div><div class="mc-tabs" role="tablist" aria-label="记忆管理">${tabHtml}</div><section class="mc-panel" role="tabpanel">${panel}</section>`;
+    if(quiet) body.scrollTop=keepScroll;
     fillIcons(body);
     body.querySelectorAll('[data-memory-tab]').forEach(button=>button.onclick=()=>{memoryConsoleTab=button.dataset.memoryTab;loadLongContext();});
-    if(memoryConsoleTab==='overview')wireMemoryOverview(chat,summary,cards);
-    if(memoryConsoleTab!=='overview')wireMemoryCards(chat,cards,cards.items||[]);
+    if(memoryConsoleTab==='summary')wireMemorySummary(chat,summary);
+    if(memoryConsoleTab==='settings')wireMemorySettings(chat,cards);
+    if(memoryConsoleTab==='cards'||memoryConsoleTab==='review')wireMemoryCards(chat,cards,cards.items||[]);
     const generate=document.getElementById('memoryGenerate'); if(generate&&!cardWorking)generate.onclick=async()=>{generate.disabled=true;generate.textContent='正在开始…';try{await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-cards/generate',{method:'POST'});loadLongContext();}catch(e){generate.disabled=false;generate.textContent='生成未处理分段的记忆卡草稿';alert('没有开始：'+e.message);}};
-    const acceptAll=document.getElementById('memoryAcceptAll'); if(acceptAll&&!cardWorking)acceptAll.onclick=async()=>{if(!confirm('采用全部 '+drafts.length+' 条待确认记忆？它们会直接按当前内容成为正式记忆卡。'))return;acceptAll.disabled=true;acceptAll.textContent='正在采用…';try{const result=await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-card-drafts/accept-all',{method:'POST'});note('（已采用 '+result.accepted+' 条记忆）');loadLongContext();}catch(e){acceptAll.disabled=false;acceptAll.textContent='采用全部（'+drafts.length+'）';alert('没有全部采用：'+e.message);}};
+    const acceptAll=document.getElementById('memoryAcceptAll'); if(acceptAll&&!cardWorking)acceptAll.onclick=async()=>{if(!confirm('采用全部 '+drafts.length+' 条待确认记忆？它们会直接按当前内容成为正式记忆卡。'))return;acceptAll.disabled=true;acceptAll.textContent='正在采用…';try{const result=await memoryJson('api/chats/'+encodeURIComponent(chat.id)+'/memory-card-drafts/accept-all',{method:'POST'});note('（已采用 '+result.accepted+' 条记忆）');document.querySelectorAll('.mc-card').forEach(c=>removeMemoryCard(c,'review'));updateMemoryTabCount('cards',result.accepted);acceptAll.remove();}catch(e){acceptAll.disabled=false;acceptAll.textContent='采用全部（'+drafts.length+'）';alert('没有全部采用：'+e.message);}};
     const search=document.getElementById('memorySearch'), filter=document.getElementById('memoryFilter');
-    const applyCardFilter=()=>{ const query=(memoryConsoleQuery||'').toLocaleLowerCase(); let visible=0; body.querySelectorAll('[data-memory-item]').forEach(card=>{ const item=active.find(value=>value.id===card.dataset.memoryItem); if(!item)return; const show=(!query||(item.content||'').toLocaleLowerCase().includes(query))&&(memoryConsoleFilter==='all'||item.status===memoryConsoleFilter||item.importance===memoryConsoleFilter); card.hidden=!show; if(show)visible+=1; }); const empty=document.getElementById('memoryFilteredEmpty'); if(empty)empty.hidden=visible!==0; };
+    const allCards=active.concat(archived); const applyCardFilter=()=>{ const query=(memoryConsoleQuery||'').toLocaleLowerCase(); let visible=0; body.querySelectorAll('[data-memory-item]').forEach(card=>{ const item=allCards.find(value=>value.id===card.dataset.memoryItem); if(!item)return; const isArchived=item.status==='archived'; const hit=!query||(item.content||'').toLocaleLowerCase().includes(query); /* 归档是独立一档：选它只看归档，不选它就一张归档都不露 */ const scope=memoryConsoleFilter==='archived'?isArchived:!isArchived&&(memoryConsoleFilter==='all'||item.status===memoryConsoleFilter||item.importance===memoryConsoleFilter); const show=hit&&scope; card.hidden=!show; if(show)visible+=1; }); const empty=document.getElementById('memoryFilteredEmpty'); if(empty)empty.hidden=visible!==0; };
     if(search)search.oninput=()=>{memoryConsoleQuery=search.value;applyCardFilter();};
     if(filter)filter.onchange=()=>{memoryConsoleFilter=filter.value;applyCardFilter();};
     if(search||filter)applyCardFilter();
@@ -11623,13 +11864,39 @@ async function setCatalogFavorite(item, favorite) {
     await getModelCatalog(); renderProviderModelPicker();
   } catch (e) { note('（常用模型没改上：' + e.message + '）', 'err'); }
 }
+async function removeCatalogModel(item, button) {
+  // 手动加错的名字不在供应商的抓取结果里，取消常用清不掉它，只能真的删掉。
+  const manual = item.manual
+    ? '把「' + item.model_id + '」从目录里删掉？'
+    : '把「' + item.model_id + '」删掉？它是抓来的，下次「获取 / 刷新」还会回来。';
+  if (!confirm(manual)) return;
+  button.disabled = true;
+  try {
+    const response = await fetch('api/model-catalog', {
+      method: 'DELETE', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({provider_id: item.provider_id, model_id: item.model_id})
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.detail || '没有删掉');
+    await getModelCatalog(); renderProviderModelPicker();
+  } catch (e) {
+    button.disabled = false;
+    note('（模型没删掉：' + e.message + '）', 'err');
+  }
+}
 function catalogRow(item) {
   const row = document.createElement('div'); row.className = 'model-catalog-row';
   const name = document.createElement('span'); name.className = 'model-catalog-name'; name.textContent = item.model_id;
   const fav = document.createElement('button'); fav.className = 'model-catalog-action';
   fav.textContent = item.favorite ? '已常用' : '＋ 常用';
   fav.onclick = () => setCatalogFavorite(item, !item.favorite);
-  row.append(name, fav);
+  const remove = document.createElement('button');
+  remove.className = 'model-catalog-action remove';
+  remove.textContent = '✕';
+  remove.title = '从目录里删掉';
+  remove.setAttribute('aria-label', '把 ' + item.model_id + ' 从目录里删掉');
+  remove.onclick = () => removeCatalogModel(item, remove);
+  row.append(name, fav, remove);
   return row;
 }
 function composerModelRow(item) {
@@ -11729,6 +11996,7 @@ async function setChatPromptCacheTtl(ttl, button) {
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.detail || '没有保存');
     curPromptCacheTtl = data.prompt_cache_ttl || ttl;
+    if (!cacheGlowApplies()) cacheGlowStop(true, false);
     renderProviderModelPicker();
   } catch (error) {
     button.disabled = false;
