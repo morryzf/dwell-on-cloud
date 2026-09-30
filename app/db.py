@@ -8,6 +8,7 @@
   文件会随部署消失，表更稳。解析逻辑不变。
 """
 
+import bisect
 import json
 import os
 import re
@@ -1125,6 +1126,101 @@ def chat_switch(chat_id: str) -> bool:
     return True
 
 
+def _branch_copy_memory(cx: sqlite3.Connection, source_chat_id: str, branch_id: str,
+                        rowid_pairs: list[tuple[int, int]]) -> None:
+    """分支接着原聊天的记忆往下走，而不是从零开始。
+
+    分段、记忆卡都按消息的 rowid 记范围。分支里的消息是复制出来的新行，rowid 全变了；
+    不把这些一起挪过来，分支会把整段旧历史重新切分、重新出一遍卡——原聊天里
+    已经有的，又冒出一整批一模一样的待确认，而分支连原来那些卡都看不到。
+    """
+    if not rowid_pairs:
+        return
+    olds = [old for old, _ in rowid_pairs]
+
+    def first_at_or_after(old_rowid: int) -> int | None:
+        index = bisect.bisect_left(olds, old_rowid)
+        return rowid_pairs[index][1] if index < len(olds) else None
+
+    def last_at_or_before(old_rowid: int) -> int | None:
+        index = bisect.bisect_right(olds, old_rowid) - 1
+        return rowid_pairs[index][1] if index >= 0 else None
+
+    def mapped_range(start: int, end: int) -> tuple[int, int] | None:
+        # 跨过分支点的那段不搬：分支里没有它后半截的消息。
+        if end > olds[-1]:
+            return None
+        new_start, new_end = first_at_or_after(start), last_at_or_before(end)
+        if new_start is None or new_end is None or new_start > new_end:
+            return None
+        return new_start, new_end
+
+    segment_map: dict[str, str] = {}
+    segments = cx.execute(
+        "SELECT * FROM chat_memory_segments WHERE chat_id=? ORDER BY start_rowid ASC",
+        (source_chat_id,),
+    ).fetchall()
+    for segment in segments:
+        span = mapped_range(int(segment["start_rowid"]), int(segment["end_rowid"]))
+        if not span:
+            continue
+        fresh = new_id()
+        segment_map[segment["id"]] = fresh
+        cx.execute(
+            """INSERT INTO chat_memory_segments (id,chat_id,start_rowid,end_rowid,content,made)
+               VALUES (?,?,?,?,?,?)""",
+            (fresh, branch_id, span[0], span[1], segment["content"], segment["made"]),
+        )
+    # 原聊天整理过的分段，分支里也算整理过，不再出卡。
+    for run in cx.execute(
+        "SELECT * FROM memory_card_segment_runs WHERE chat_id=?", (source_chat_id,)
+    ).fetchall():
+        if run["segment_id"] in segment_map:
+            cx.execute(
+                """INSERT OR IGNORE INTO memory_card_segment_runs
+                   (segment_id,chat_id,candidate_count,processed_at) VALUES (?,?,?,?)""",
+                (segment_map[run["segment_id"]], branch_id, run["candidate_count"], run["processed_at"]),
+            )
+
+    state = cx.execute("SELECT * FROM chat_memory_state WHERE chat_id=?", (source_chat_id,)).fetchone()
+    if state:
+        copied = dict(state)
+        copied["chat_id"] = branch_id
+        through = int(copied.get("through_rowid") or 0)
+        copied["through_rowid"] = (last_at_or_before(min(through, olds[-1])) or 0) if through else 0
+        if copied.get("status") in ("queued", "running"):
+            copied["status"] = "ready"
+        columns = list(copied)
+        cx.execute(
+            f"INSERT OR REPLACE INTO chat_memory_state ({','.join(columns)}) "
+            f"VALUES ({','.join('?' for _ in columns)})",
+            [copied[column] for column in columns],
+        )
+
+    # 按需记忆的开关跟着原聊天走。
+    for key in ("memory_cards_enabled",):
+        value = cx.execute("SELECT value FROM settings WHERE key=?", (f"{key}:{source_chat_id}",)).fetchone()
+        if value:
+            cx.execute("INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)",
+                       (f"{key}:{branch_id}", value["value"]))
+
+    # 记忆卡是按聊天各管各的，分支看不到原聊天的卡——带一份过去，分支才记得以前的事。
+    for card in cx.execute("SELECT * FROM memory_cards WHERE chat_id=?", (source_chat_id,)).fetchall():
+        copied = dict(card)
+        copied["id"] = new_id()
+        copied["chat_id"] = branch_id
+        if copied.get("source_segment_id"):
+            copied["source_segment_id"] = segment_map.get(copied["source_segment_id"])
+        span = mapped_range(int(copied.get("source_start_rowid") or 0),
+                            int(copied.get("source_end_rowid") or 0))
+        copied["source_start_rowid"], copied["source_end_rowid"] = span or (0, 0)
+        columns = list(copied)
+        cx.execute(
+            f"INSERT INTO memory_cards ({','.join(columns)}) VALUES ({','.join('?' for _ in columns)})",
+            [copied[column] for column in columns],
+        )
+
+
 def chat_branch_from_message(source_chat_id: str, message_id: str) -> dict | None:
     """复制从开头到指定消息的一条时间线，原聊天不受影响。"""
     with conn() as cx:
@@ -1146,15 +1242,18 @@ def chat_branch_from_message(source_chat_id: str, message_id: str) -> dict | Non
         rows = cx.execute("SELECT rowid,* FROM messages WHERE chat_id=? AND rowid<=? ORDER BY rowid ASC",
                           (source_chat_id, pivot["rowid"])).fetchall()
         id_map: dict[str, str] = {}
+        rowid_pairs: list[tuple[int, int]] = []
         for row in rows:
             fresh = new_id(); id_map[row["id"]] = fresh
-            cx.execute(
+            cur = cx.execute(
                 """INSERT INTO messages
                    (id,chat_id,role,content,thinking,made,origin,display_split)
                    VALUES (?,?,?,?,?,?,?,?)""",
                 (fresh, branch["id"], row["role"], row["content"], row["thinking"],
                  row["made"], row["origin"], row["display_split"]),
             )
+            rowid_pairs.append((int(row["rowid"]), int(cur.lastrowid)))
+        _branch_copy_memory(cx, source_chat_id, branch["id"], rowid_pairs)
         for old_id, fresh in id_map.items():
             versions = cx.execute("SELECT content,reason,made FROM message_versions WHERE message_id=? ORDER BY rowid ASC", (old_id,)).fetchall()
             cx.executemany("INSERT INTO message_versions (id,message_id,content,reason,made) VALUES (?,?,?,?,?)",
@@ -1895,6 +1994,13 @@ def memory_card_draft_accept(chat_id: str, draft_id: str, chosen: dict) -> dict:
         )
         cx.execute("DELETE FROM memory_card_drafts WHERE id=?", (draft_id,))
     return memory_card_get(chat_id, row["id"])
+
+
+def memory_card_drafts_discard_all(chat_id: str) -> int:
+    """一次清空待确认。分段已经记为整理过，清掉之后不会再长回来。"""
+    with conn() as cx:
+        cur = cx.execute("DELETE FROM memory_card_drafts WHERE chat_id=?", (chat_id,))
+    return cur.rowcount
 
 
 def memory_card_draft_discard(chat_id: str, draft_id: str) -> bool:
