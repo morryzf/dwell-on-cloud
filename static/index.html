@@ -880,6 +880,7 @@ html[data-theme="dark"] .composer {
   .ap-cache-help { margin: 7px 2px 0; color: var(--dim); font-size: 12.5px; line-height: 1.55; }
   .ap-section-description { margin: 2px 0 0; color: var(--dim); font-size: 12.5px; line-height: 1.55; }
   .provider-profile-list { margin-top: 12px; }
+  .group .provider-profile-row { padding: 10px 16px; font-size: 14.5px; gap: 10px; }
   .provider-profile-row { transition: transform 140ms var(--ease-out), background-color 160ms ease; }
   .provider-profile-row:active { transform: scale(.985); }
   .provider-profile-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -899,6 +900,7 @@ html[data-theme="dark"] .composer {
   }
   .ap-b:active { transform: scale(.985); }
   .ap-b.go { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .ap-b.danger { color: var(--danger, #c0566f); }
   .ap-msg { display: none; margin-top: 12px; padding: 11px 12px; border-radius: 11px; color: var(--green); background: var(--sage-track); font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
   .ap-msg.on { display: block; }
   .ap-msg.bad { color: var(--red); background: var(--red-track); }
@@ -1007,6 +1009,7 @@ html[data-theme="dark"] .composer {
   .model-catalog-provider { color: var(--dim); font-size: 12px; white-space: nowrap; }
   .model-catalog-action { flex: none; min-width: 42px; min-height: 32px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 9px; background: var(--card); color: var(--text); font-size: 13px; font-weight: 700; }
   .model-catalog-action.primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+  .model-catalog-action.remove { min-width: 32px; padding: 4px 6px; color: var(--dim); font-weight: 400; }
   .row { position: relative; }
   .row.actions-on { padding-bottom: 30px; }
   .msg-actions { display: none; position: absolute; z-index: 8; left: 0; bottom: 2px; align-items: center; gap: 12px; max-width: calc(100vw - 36px); padding: 0; border: 0; background: transparent; box-shadow: none; }
@@ -2006,11 +2009,38 @@ html[data-theme="dark"] .note { color: #2f2b26; box-shadow: 0 3px 12px rgba(0,0,
           background: var(--panel); color: var(--text);
           font-variant-numeric: tabular-nums; transition: background .2s, color .2s; }
   .chip.on { background: var(--text); color: var(--bg); }
+  /* 空的 time 输入框什么都不显，在手机上就是个莫名其妙的空药片。
+     套一层壳：药片的长相全在壳上（和 .chip 一模一样），
+     里头的 input 脱得只剩文字。没选时间时读作「时间」，
+     选了就让真值露出来。 */
+  .hadd .tmwrap {
+    position: relative; display: inline-flex; align-items: center;
+    border: 0; border-radius: 999px; padding: 7px 14px; font-size: 12.5px;
+    background: var(--panel); color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  /* 里头是拉丁数字，行高天生比中文矮。用一个看不见的中文字撑高度，
+     才能和旁边的「每天」严丝合缝。 */
+  .hadd .tmwrap::after {
+    content: '时'; width: 0; overflow: hidden; visibility: hidden;
+  }
+  .hadd .tmwrap::before {
+    content: '时间'; position: absolute; left: 14px; pointer-events: none;
+    color: var(--dim);
+  }
+  .hadd .tmwrap.set::before { content: none; }
+  .hadd .tmwrap:not(.set) input[type=time] { color: transparent; }
   .hadd input[type=time] {
-    border: 0; border-radius: 999px; padding: 6px 12px;
-    background: var(--panel); color: inherit; font: inherit; font-size: 12.5px;
+    border: 0; padding: 0; margin: 0; background: transparent; color: inherit;
+    font: inherit; font-size: 12.5px; min-width: 44px;
+    /* UA 还会在 time 输入框上多摊 2px。告诉它就占一个行高，
+       和旁边「每天」的文字占得一样多。 */
+    height: 1.7em;
     font-variant-numeric: tabular-nums; -webkit-appearance: none; appearance: none;
   }
+  /* iOS 会给 time 输入框塔上一堆自己的内边距和图标。 */
+  .hadd input[type=time]::-webkit-date-and-time-value { margin: 0; text-align: left; }
+  .hadd input[type=time]::-webkit-calendar-picker-indicator { display: none; }
   .hadd .go { margin-left: auto; border: 0; border-radius: 999px; padding: 8px 20px;
               font-size: 13px; background: var(--text); color: var(--bg); font-weight: 500; }
 
@@ -5881,7 +5911,13 @@ function cacheGlowAnimate(end) {
   cacheGlowUpdateLabel();
 }
 
+// 这圈光画的是 5 分钟缓存的剩余时间。选 1h 或关掉缓存时它没有意义。
+function cacheGlowApplies() {
+  return curPromptCacheTtl === '5m';
+}
+
 function cacheGlowStart() {
+  if (!cacheGlowApplies()) { cacheGlowStop(true, true); return; }
   const begin = () => {
     cacheGlowEnd = Date.now() + CACHE_GLOW_MS;
     cacheGlowSave();
@@ -5918,7 +5954,9 @@ function cacheGlowStop(clearStored, quick) {
 function cacheGlowSetChat(chatId) {
   cacheGlowChatId = String(chatId || '');
   const stored = cacheGlowStored();
-  if (stored && stored.chat_id === cacheGlowChatId && Number(stored.end) > Date.now()) {
+  if (!cacheGlowApplies()) {
+    cacheGlowStop(true, true);
+  } else if (stored && stored.chat_id === cacheGlowChatId && Number(stored.end) > Date.now()) {
     cacheGlowAnimate(Number(stored.end));
   } else {
     cacheGlowStop(false, true);
@@ -9153,6 +9191,13 @@ function renderTodos(d) {
   const row = document.createElement('div');
   row.className = 'row';
   const tm = document.createElement('input'); tm.type = 'time';
+  tm.setAttribute('aria-label', '几点提醒');
+  const tmWrap = document.createElement('span');
+  tmWrap.className = 'tmwrap';
+  tmWrap.appendChild(tm);
+  const tmSync = () => tmWrap.classList.toggle('set', !!tm.value);
+  tm.addEventListener('input', tmSync);
+  tm.addEventListener('change', tmSync);
   const daily = document.createElement('button');
   daily.className = 'chip'; daily.textContent = '\u6bcf\u5929';
   let dailyOn = false;
@@ -9164,13 +9209,13 @@ function renderTodos(d) {
     if (!v) return;
     inp.value = '';
     todoAct({ action: 'add', list: 'hers', text: v, by: 'her', at: tm.value, fixed: dailyOn });
-    tm.value = ''; dailyOn = false; daily.classList.remove('on');
+    tm.value = ''; tmSync(); dailyOn = false; daily.classList.remove('on');
     add.classList.remove('open'); plus.style.display = '';
   };
   go.onclick = doAdd;
   inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) doAdd(); });
   plus.onclick = () => { add.classList.add('open'); plus.style.display = 'none'; inp.focus(); };
-  row.append(tm, daily, go);
+  row.append(tmWrap, daily, go);
   add.append(inp, row);
   c1.append(plus, add);
   todoBody.appendChild(c1);
@@ -9857,7 +9902,10 @@ function openProviderEditorPage(provider) {
     + '<div class="ap-cache-help">这里只决定怎样连接供应商；缓存时长在每间聊天的模型选择里设置。</div>'
     + '<div class="ap-lb">令牌</div>'
     + '<input class="ap-in" id="apTok" type="password" placeholder="粘贴 API 密钥">'
-    + '<div class="ap-btns single"><button class="ap-b go" id="apSave">保存供应商</button></div>'
+    + (editingProviderId
+        ? '<div class="ap-btns"><button class="ap-b danger" id="apDelete">删除供应商</button>'
+          + '<button class="ap-b go" id="apSave">保存供应商</button></div>'
+        : '<div class="ap-btns single"><button class="ap-b go" id="apSave">保存供应商</button></div>')
     + '<div class="ap-msg" id="apMsg"></div></div>';
   b.scrollTop = 0;
 
@@ -9878,6 +9926,27 @@ function openProviderEditorPage(provider) {
     msg.textContent = text;
     msg.className = 'ap-msg on' + (bad ? ' bad' : '');
   };
+  const deleteButton = document.getElementById('apDelete');
+  if (deleteButton) {
+    deleteButton.onclick = async () => {
+      if (!confirm('删掉供应商「' + (p.name || '') + '」？它保存的密钥也会一起没了。')) return;
+      deleteButton.disabled = true;
+      say('正在删除…');
+      try {
+        const response = await fetch('api/providers/' + encodeURIComponent(editingProviderId), {
+          method: 'DELETE',
+        });
+        const data = await response.json();
+        // 后端挡着：还有聊天在用这个供应商时不给删，理由照原样说给用户。
+        if (!response.ok || !data.ok) throw new Error(data.detail || '没有删掉');
+        loadApi();
+      } catch (e) {
+        deleteButton.disabled = false;
+        say('删不掉：' + e.message, true);
+      }
+    };
+  }
+
   document.getElementById('apSave').onclick = async () => {
     say('正在安全保存…');
     try {
@@ -10280,7 +10349,7 @@ const MESSAGE_STYLE_CONTROLS = [
   { key: 'backgroundOpacity', label: '背景不透明度', type: 'range', min: 0, max: 100, step: 1 },
   { key: 'border', label: '边框颜色', type: 'color' },
   { key: 'borderOpacity', label: '边框不透明度', type: 'range', min: 0, max: 100, step: 1 },
-  { key: 'borderWidth', label: '边框宽度', type: 'range', min: 0, max: 3, step: .5 },
+  { key: 'borderWidth', label: '边框宽度', type: 'range', min: 0, max: 3, step: .1 },
   { key: 'text', label: '文字颜色', type: 'color' },
   { key: 'radius', label: '圆角半径', type: 'range', min: 4, max: 32, step: 1 }
 ];
@@ -11623,13 +11692,39 @@ async function setCatalogFavorite(item, favorite) {
     await getModelCatalog(); renderProviderModelPicker();
   } catch (e) { note('（常用模型没改上：' + e.message + '）', 'err'); }
 }
+async function removeCatalogModel(item, button) {
+  // 手动加错的名字不在供应商的抓取结果里，取消常用清不掉它，只能真的删掉。
+  const manual = item.manual
+    ? '把「' + item.model_id + '」从目录里删掉？'
+    : '把「' + item.model_id + '」删掉？它是抓来的，下次「获取 / 刷新」还会回来。';
+  if (!confirm(manual)) return;
+  button.disabled = true;
+  try {
+    const response = await fetch('api/model-catalog', {
+      method: 'DELETE', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({provider_id: item.provider_id, model_id: item.model_id})
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.detail || '没有删掉');
+    await getModelCatalog(); renderProviderModelPicker();
+  } catch (e) {
+    button.disabled = false;
+    note('（模型没删掉：' + e.message + '）', 'err');
+  }
+}
 function catalogRow(item) {
   const row = document.createElement('div'); row.className = 'model-catalog-row';
   const name = document.createElement('span'); name.className = 'model-catalog-name'; name.textContent = item.model_id;
   const fav = document.createElement('button'); fav.className = 'model-catalog-action';
   fav.textContent = item.favorite ? '已常用' : '＋ 常用';
   fav.onclick = () => setCatalogFavorite(item, !item.favorite);
-  row.append(name, fav);
+  const remove = document.createElement('button');
+  remove.className = 'model-catalog-action remove';
+  remove.textContent = '✕';
+  remove.title = '从目录里删掉';
+  remove.setAttribute('aria-label', '把 ' + item.model_id + ' 从目录里删掉');
+  remove.onclick = () => removeCatalogModel(item, remove);
+  row.append(name, fav, remove);
   return row;
 }
 function composerModelRow(item) {
@@ -11729,6 +11824,7 @@ async function setChatPromptCacheTtl(ttl, button) {
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.detail || '没有保存');
     curPromptCacheTtl = data.prompt_cache_ttl || ttl;
+    if (!cacheGlowApplies()) cacheGlowStop(true, false);
     renderProviderModelPicker();
   } catch (error) {
     button.disabled = false;

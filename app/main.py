@@ -2733,6 +2733,18 @@ async def model_catalog_upsert(request: Request):
     return {"ok": True, "item": _model_catalog_item(saved, {provider_id: provider})}
 
 
+@app.delete("/api/model-catalog", dependencies=authed)
+async def model_catalog_delete(request: Request):
+    payload = await _read_json(request)
+    provider_id = str(payload.get("provider_id") or "").strip()
+    model_id = str(payload.get("model_id") or "").strip()[:200]
+    if not provider_id or not model_id:
+        raise HTTPException(400, "要删哪个模型没说清楚")
+    if not db.provider_model_delete(provider_id, model_id):
+        raise HTTPException(404, "目录里没有这个模型")
+    return {"ok": True}
+
+
 @app.post("/api/model-catalog/refresh", dependencies=authed)
 async def model_catalog_refresh(request: Request):
     payload = await _read_json(request)

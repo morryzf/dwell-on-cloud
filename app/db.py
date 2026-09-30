@@ -794,8 +794,36 @@ def night_list(limit: int = 200) -> list:
 
 # ---------------------------------------------------------------- 待办
 
-def todos_all() -> dict:
+
+# 一天从几点算起。凌晨两点对人来说还是「今天」——
+# 每天固定的待办不该在你还醒着的时候就自己把勾弹回去。
+DAY_START_HOUR = 6
+TODOS_FIXED_RESET_KEY = "todos_fixed_reset_day"
+
+
+def day_key(now: datetime | None = None) -> str:
+    """此刻算哪一天。DAY_START_HOUR 之前算前一天。"""
+    return ((now or cn_now()) - timedelta(hours=DAY_START_HOUR)).date().isoformat()
+
+
+def todos_reset_fixed_for_new_day(now: datetime | None = None) -> bool:
+    """新的一天，把「每天」的待办重新打开。
+
+    没有定时任务，读待办的时候顺手做——反正没人看的时候，
+    勾是开是关也没意义。
+    """
+    today = day_key(now)
+    if setting_get(TODOS_FIXED_RESET_KEY, "") == today:
+        return False
+    with conn() as cx:
+        cx.execute("UPDATE todos SET done=0 WHERE fixed=1 AND done=1")
+    setting_set(TODOS_FIXED_RESET_KEY, today)
+    return True
+
+
+def todos_all(now: datetime | None = None) -> dict:
     """两栏一起给。排序交给前端——它知道"现在几点"，服务器不该猜。"""
+    todos_reset_fixed_for_new_day(now)
     with conn() as cx:
         rows = cx.execute("SELECT * FROM todos").fetchall()
     out = {"mine": [], "hers": []}
@@ -2249,6 +2277,20 @@ def provider_model_upsert(provider_id: str, model_id: str, favorite: bool | None
         )
         row = cx.execute("SELECT * FROM provider_models WHERE provider_id=? AND model_id=?", (provider_id, model_id)).fetchone()
     return {**dict(row), "favorite": bool(row["favorite"]), "manual": bool(row["manual"])}
+
+
+def provider_model_delete(provider_id: str, model_id: str) -> bool:
+    """把一个模型从目录里拿掉。
+
+    取消常用只是清掉标记，行还留着；手动加错的名字不在供应商的抓取结果里，
+    不删就永远清不掉。抓来的删掉后，下次「获取 / 刷新」会自己回来。
+    """
+    with conn() as cx:
+        cur = cx.execute(
+            "DELETE FROM provider_models WHERE provider_id=? AND model_id=?",
+            (provider_id, model_id),
+        )
+    return cur.rowcount > 0
 
 
 def provider_models_refresh(provider_id: str, model_ids: list[str]) -> int:
