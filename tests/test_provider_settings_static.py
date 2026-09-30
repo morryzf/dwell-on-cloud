@@ -26,8 +26,10 @@ class ProviderSettingsStaticTest(unittest.TestCase):
             "openProviderEditorPage(null);",
             self.ui,
         )
+        # 模型供应商是设置的下一级：左上角一直是返回箭头——编辑页回列表，列表页回设置。
+        self.assertIn("back.appendChild(icEl('chevL', 16));", self.ui)
         self.assertIn(
-            "back.appendChild(icEl(backToList ? 'chevL' : 'x', 16));",
+            "back.onclick = backToList ? loadApi : () => sheets.api.classList.remove('open');",
             self.ui,
         )
         self.assertNotIn('id="apEditor" hidden', self.ui)

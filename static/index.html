@@ -251,8 +251,10 @@ html[data-theme="dark"] .glass,
   }
   .proactive-divider::before, .proactive-divider::after {
     content: ''; flex: 1; height: 1px;
-    background: color-mix(in srgb, var(--line) 82%, transparent);
+    /* 两条线越往外越淡，到两头隐没 */
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--line) 82%, transparent));
   }
+  .proactive-divider::after { background: linear-gradient(90deg, color-mix(in srgb, var(--line) 82%, transparent), transparent); }
   .bubble {
     background: var(--user-bubble); border-radius: 18px; padding: 8px 14px;
     max-width: 85%; white-space: pre-wrap; word-break: break-word; line-height: 1.55;
@@ -3734,6 +3736,22 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   @media (prefers-color-scheme: dark) {
     html:not([data-theme="light"]) #drawer #avatarBtn { box-shadow: inset 0 0 0 .5px rgba(255,235,244,.22), 0 3px 10px rgba(0,0,0,.18) !important; }
   }
+  /* 设置的下一级：不从下面弹窗，整页从右边推进来；设置本身往左让开、淡出。
+     左上角换成返回箭头，关掉就回到上一层。 */
+  .sheetWrap.sub.open { align-items: stretch; justify-content: stretch; }
+  .sheetWrap.sub .shade { background: transparent; }
+  .sheetWrap.sub .sheet {
+    width: 100%; max-width: none; height: 100dvh; max-height: 100dvh; min-height: 0; border-radius: 0;
+    background: var(--interface-page-sheet-bg) !important;
+    -webkit-backdrop-filter: blur(var(--interface-page-sheet-blur)) saturate(1.45) brightness(1.04);
+    backdrop-filter: blur(var(--interface-page-sheet-blur)) saturate(1.45) brightness(1.04);
+    animation: pushIn .3s cubic-bezier(.22,.8,.24,1);
+  }
+  .sheetWrap.sub .sheet::after { display: none; }
+  .sheetWrap.sub .grabber { display: none; }
+  @keyframes pushIn { from { transform: translateX(100%); } }
+  #settingsSheet .sheet { transition: transform .3s cubic-bezier(.22,.8,.24,1), opacity .3s ease; }
+  body:has(.sheetWrap.sub.open) #settingsSheet .sheet { transform: translateX(-28%); opacity: 0; pointer-events: none; }
   /* 设置、心跳：同一组里的行与行之间不画分隔线，靠间距分开。 */
   #settingsSheet .group .grow + .grow, #heartbeatSheet .group .grow + .grow { border-top: 0 !important; }
   /* 心跳：卡片和输入框原来各自又叠一层模糊。套在已经模糊的面板里，手机上里层只能
@@ -3928,23 +3946,23 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   </div>
 </div>
 
-<div class="sheetWrap page" id="ttsSheet">
+<div class="sheetWrap sub" id="ttsSheet">
   <div class="shade" data-close="tts"></div>
   <div class="sheet">
     <div class="head">
-      <button class="hbtn" data-close="tts"><span class="ic" data-i="x"></span></button>
+      <button class="hbtn" data-close="tts"><span class="ic" data-i="chevL"></span></button>
       <div class="ht">语音服务</div><div class="hspace"></div>
     </div>
     <div class="body" id="ttsBody"><div class="gnote">正在读取语音设置…</div></div>
   </div>
 </div>
 
-<div class="sheetWrap page" id="systemLogSheet">
+<div class="sheetWrap sub" id="systemLogSheet">
   <div class="shade" data-close="systemLog"></div>
   <div class="sheet">
     <div class="grabber"></div>
     <div class="head">
-      <button class="hbtn" data-close="systemLog"><span class="ic" data-i="x"></span></button>
+      <button class="hbtn" data-close="systemLog"><span class="ic" data-i="chevL"></span></button>
       <div class="ht">系统日志</div>
       <button class="hbtn" id="systemLogClear" title="清空日志"><span class="ic" data-i="trash"></span></button>
     </div>
@@ -4021,28 +4039,28 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   </div>
 </div>
 
-<div class="sheetWrap" id="backgroundSheet">
+<div class="sheetWrap sub" id="backgroundSheet">
   <div class="shade" data-close="background"></div>
   <div class="sheet"><div class="grabber"></div><div class="head">
-    <button class="hbtn" data-close="background"><span class="ic" data-i="x"></span></button><div class="ht">聊天背景</div><div class="hspace"></div>
+    <button class="hbtn" data-close="background"><span class="ic" data-i="chevL"></span></button><div class="ht">聊天背景</div><div class="hspace"></div>
   </div><div class="body" id="backgroundBody"></div></div>
 </div>
 
-<div class="sheetWrap" id="messageStyleSheet">
+<div class="sheetWrap sub" id="messageStyleSheet">
   <div class="shade" data-close="messageStyle"></div>
   <div class="sheet"><div class="grabber"></div><div class="head">
-    <button class="hbtn" data-close="messageStyle"><span class="ic" data-i="x"></span></button>
+    <button class="hbtn" data-close="messageStyle"><span class="ic" data-i="chevL"></span></button>
     <div class="ht">玻璃效果</div>
     <button class="hbtn" id="messageStyleReset" title="恢复玻璃效果默认值"><span class="ic" data-i="refresh"></span></button>
   </div><div class="body" id="messageStyleBody"></div></div>
 </div>
 
-<div class="sheetWrap" id="apiSheet">
+<div class="sheetWrap sub" id="apiSheet">
   <div class="shade" data-close="api"></div>
   <div class="sheet">
     <div class="grabber"></div>
     <div class="head">
-      <button class="hbtn" id="apiBack" data-close="api"><span class="ic" data-i="x"></span></button>
+      <button class="hbtn" id="apiBack" data-close="api"><span class="ic" data-i="chevL"></span></button>
       <div class="ht" id="apiTitle">模型供应商</div>
       <div class="hspace"></div>
     </div>
@@ -4050,10 +4068,10 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   </div>
 </div>
 
-<div class="sheetWrap" id="mcpSheet">
+<div class="sheetWrap sub" id="mcpSheet">
   <div class="shade" data-close="mcp"></div>
   <div class="sheet"><div class="grabber"></div><div class="head">
-    <button class="hbtn" data-close="mcp"><span class="ic" data-i="x"></span></button><div class="ht">MCP 工具</div>
+    <button class="hbtn" data-close="mcp"><span class="ic" data-i="chevL"></span></button><div class="ht">MCP 工具</div>
   </div><div class="body" id="mcpBody"></div></div>
 </div>
 
@@ -4086,10 +4104,10 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   </div><div class="body" id="messageVersionsBody"></div></div>
 </div>
 
-<div class="sheetWrap" id="kelivoImportSheet">
+<div class="sheetWrap sub" id="kelivoImportSheet">
   <div class="shade" data-close="kelivoImport"></div>
   <div class="sheet"><div class="grabber"></div><div class="head">
-    <button class="hbtn" data-close="kelivoImport"><span class="ic" data-i="x"></span></button><div class="ht">导入 Kelivo</div><div class="hspace"></div>
+    <button class="hbtn" data-close="kelivoImport"><span class="ic" data-i="chevL"></span></button><div class="ht">导入 Kelivo</div><div class="hspace"></div>
   </div><div class="body" id="kelivoImportBody"></div></div>
 </div>
 
@@ -4100,10 +4118,10 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   </div><div class="body" id="wakeTargetBody"></div></div>
 </div>
 
-<div class="sheetWrap" id="instructionsSheet">
+<div class="sheetWrap sub" id="instructionsSheet">
   <div class="shade" data-close="instructions"></div>
   <div class="sheet"><div class="grabber"></div><div class="head">
-    <button class="hbtn" data-close="instructions"><span class="ic" data-i="x"></span></button><div class="ht">聊天指令</div><div class="hspace"></div>
+    <button class="hbtn" data-close="instructions"><span class="ic" data-i="chevL"></span></button><div class="ht">聊天指令</div><div class="hspace"></div>
   </div><div class="body" id="instructionsBody"></div></div>
 </div>
 
@@ -9490,7 +9508,7 @@ document.querySelectorAll('[data-close]').forEach(el => {
     const wrap = sheets[k];
     clearSheetKeyboardOffset(wrap);
     wrap.classList.remove('open');
-    if (wrap.classList.contains('page')) openDrawer();
+    if (wrap.classList.contains('page') && !wrap.classList.contains('sub')) openDrawer();
   };
 });
 
@@ -9502,9 +9520,10 @@ Object.entries(sheets).forEach(([k, wrap]) => {
     if (k === 'tool') sheetStack = [];
     clearSheetKeyboardOffset(wrap);
     wrap.classList.remove('open');
-    if (wrap.classList.contains('page')) openDrawer();
+    if (wrap.classList.contains('page') && !wrap.classList.contains('sub')) openDrawer();
   };
   sheet.addEventListener('touchstart', (e) => {
+    if (wrap.classList.contains('sub')) return;          // 下一级用左上角的返回，不往下拽
     if (!e.target.closest('.grabber') && !e.target.closest('.head')) return;
     if (e.target.closest('.hbtn')) return;          // 按钮的事归按钮
     dragging = true; startY = e.touches[0].clientY; curY = 0;
@@ -10122,7 +10141,7 @@ function setApiHeader(title, backToList = false) {
   const back = document.getElementById('apiBack');
   document.getElementById('apiTitle').textContent = title;
   back.innerHTML = '';
-  back.appendChild(icEl(backToList ? 'chevL' : 'x', 16));
+  back.appendChild(icEl('chevL', 16));
   back.onclick = backToList ? loadApi : () => sheets.api.classList.remove('open');
 }
 
@@ -11709,7 +11728,7 @@ const modelBody = document.getElementById('modelBody');
 const modelBack = document.getElementById('modelBack');
 let modelView = 'main';
 
-function openModelSheet() { modelView = 'main'; renderModelSheet(); modelSheetEl.classList.add('open'); }
+function openModelSheet() { modelSheetEl.classList.remove('sub'); modelView = 'main'; renderModelSheet(); modelSheetEl.classList.add('open'); }
 pill.onclick = openModelSheet;
 modelBack.onclick = () => {
   if (modelView !== 'main') { modelView = 'main'; renderModelSheet(); }
@@ -12247,6 +12266,7 @@ async function openProviderModelPicker(mode = 'favorites', origin = 'chat') {
   catalogMode = origin === 'settings' ? 'browse' : mode;
   modelTitle.textContent = origin === 'settings' ? '模型目录' : '模型';
   modelBody.innerHTML = '<div class="gnote">正在打开模型目录…</div>';
+  modelSheetEl.classList.toggle('sub', origin === 'settings');
   modelSheetEl.classList.add('open');
   const settingsCatalog = catalogOrigin === 'settings';
   modelBack.innerHTML = '';
