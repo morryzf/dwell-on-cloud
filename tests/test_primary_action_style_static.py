@@ -6,8 +6,8 @@ INDEX = (ROOT / "static" / "index.html").read_text(encoding="utf-8")
 
 
 def test_memory_overview_describes_conversation_continuity():
-    assert "总览维持对话的连续性" in INDEX
-    assert "总览维持这段关系的连续性" not in INDEX
+    assert "摘要维持对话的连续性" in INDEX
+    assert "维持这段关系的连续性" not in INDEX
 
 
 def test_primary_settings_actions_share_a_clear_visual_style():
