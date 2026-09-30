@@ -3641,19 +3641,19 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   :root {
     --rim-w: .5px;
     --rim-base: rgba(150,110,128,.20);
-    --rim-hi: rgba(255,255,255,.85);
-    --rim-lo: rgba(255,255,255,.68);
+    --rim-hi: rgba(255,255,255,.80);
+    --rim-lo: rgba(255,255,255,.75);
   }
   html[data-theme="dark"] {
     --rim-base: rgba(255,235,244,.13);
     --rim-hi: rgba(255,240,247,.54);
-    --rim-lo: rgba(255,240,247,.40);
+    --rim-lo: rgba(255,240,247,.50);
   }
   @media (prefers-color-scheme: dark) {
     html:not([data-theme="light"]) {
       --rim-base: rgba(255,235,244,.13);
       --rim-hi: rgba(255,240,247,.54);
-      --rim-lo: rgba(255,240,247,.40);
+      --rim-lo: rgba(255,240,247,.50);
     }
   }
   #log .bubble { --rim-w: var(--msg-me-border-width, 1px); --rim-base: var(--msg-me-border, rgba(255,255,255,.42)); }
@@ -3684,6 +3684,9 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   }
+  /* 设置面板里的分组卡片自己带 overflow:hidden，画在外沿那 1px 的边会被自己裁掉——
+     去掉那 1px 透明边框，把这圈边画在卡片里面。 */
+  .sheet .group { border-width: 0 !important; --glass-border: 0px; }
   /* 本身没有边框的按钮，这圈边就画在它自己的边上 */
   header .iconbtn, .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill) { --glass-border: 0px; }
   #log .bubble::before { inset: calc(-1 * var(--msg-me-border-width, 1px)); }
