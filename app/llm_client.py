@@ -583,7 +583,7 @@ async def _stream_openai(client, provider: dict, api_key: str, model_id: str,
                         "回不了这一条。去 https://openrouter.ai/settings/credits 充值后再试。"
                     )}
                     return
-                yield {"type": "text", "text": f"[供应商错误 {resp.status_code}] {body[:500]}"}
+                yield {"type": "text", "text": provider_error_text(resp.status_code, body)}
                 return
             yield {
                 "type": "cache_status",
@@ -594,6 +594,50 @@ async def _stream_openai(client, provider: dict, api_key: str, model_id: str,
             async for event in _openai_response_events(resp):
                 yield event
             return
+
+
+QUOTA_CODES = {"insufficient_user_quota", "insufficient_quota", "insufficient_balance", "quota_exceeded"}
+QUOTA_WORDS = re.compile(
+    r"余额不足|额度不足|预扣费额度失败|额度已用尽|insufficient[_ ](user[_ ])?(quota|balance|credits?)"
+    r"|requires more credits|exceeded your current quota",
+    re.IGNORECASE,
+)
+
+
+def provider_error_text(status: int, body: str) -> str:
+    """把供应商的报错翻成人话。余额不够这类最常见，单独说清楚要去哪里做什么。
+
+    中转站（new-api 这类）按「发过去的内容 + 回复上限」预扣费，聊天越长、模型越贵，
+    每条要预扣的就越多；余额低于这个数就整条被拒，改小回复上限也救不回来。
+    """
+    message, code = "", ""
+    try:
+        data = json.loads(body)
+        error = data.get("error") if isinstance(data, dict) else None
+        if isinstance(error, dict):
+            message, code = str(error.get("message") or ""), str(error.get("code") or "")
+        elif isinstance(data, dict):
+            message = str(data.get("message") or error or "")
+    except (ValueError, AttributeError):
+        pass
+    if code in QUOTA_CODES or QUOTA_WORDS.search(message or body):
+        left = re.search(r"剩余额度[:：]\s*([¥$]?[\d.]+)", message)
+        need = re.search(r"预扣费额度[:：]\s*([¥$]?[\d.]+)", message)
+        detail = ""
+        if left and need:
+            detail = f"剩 {_money(left.group(1))}，这条要预扣 {_money(need.group(1))}。"
+        return (f"[供应商错误 {status}] 供应商那边余额不够了，这条没发出去。{detail}"
+                "去这个供应商的网站充值后再试。聊天越长、模型越贵，每条要预扣的就越多。")
+    return f"[供应商错误 {status}] {(message or body)[:500]}"
+
+
+def _money(raw: str) -> str:
+    """¥0.200000 → ¥0.20"""
+    sign = raw[0] if raw[:1] in "¥$" else ""
+    try:
+        return f"{sign}{float(raw.lstrip('¥$')):.2f}"
+    except ValueError:
+        return raw
 
 
 # 余额只够这么点时就别硬回了，回出来也是半句话。
@@ -660,13 +704,13 @@ async def stream_chat(provider: dict, model_id: str, messages: list, tools: list
                         fallback_status = resp.status_code
                         body = (await resp.aread()).decode(
                             "utf-8", errors="ignore"
-                        )[:500]
+                        )
                         if resp.status_code in {401, 403} and auth_mode == "x-api-key":
                             continue
                         if resp.status_code not in {401, 403, 404, 405}:
                             yield {
                                 "type": "text",
-                                "text": f"[供应商错误 {resp.status_code}] {body}",
+                                "text": provider_error_text(resp.status_code, body),
                             }
                             return
                         break
