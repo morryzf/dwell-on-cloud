@@ -3967,6 +3967,43 @@ def _inline_image_attachments(raw: object) -> list[dict]:
     return images
 
 
+TEXT_ATTACHMENT_MAX = 4
+TEXT_ATTACHMENT_CHARS = 200_000
+
+
+def _inline_text_attachments(raw: object) -> list[dict]:
+    """收下前端读好的小文本文件。
+
+    前端会把 .md/.txt/.csv/.py 这类小文件读成文字放进 attachments，但服务端
+    以前只挑图片，这些一个字都没收下——附件条上看得见，模型那边什么也没有。
+    """
+    if not isinstance(raw, list):
+        return []
+    files: list[dict] = []
+    for item in raw[:TEXT_ATTACHMENT_MAX]:
+        if not isinstance(item, dict) or item.get("kind") != "text":
+            continue
+        text = str(item.get("text") or "")
+        if not text.strip():
+            continue
+        # 文件名会原样出现在给模型的提示里，去掉控制字符免得把结构搅乱。
+        name = re.sub(r"[\x00-\x1f\x7f]", "", str(item.get("name") or "")).strip()[:120]
+        files.append({"name": name or "未命名文件", "text": text[:TEXT_ATTACHMENT_CHARS]})
+    return files
+
+
+def _text_attachment_block(files: list[dict]) -> str:
+    """把文件拼成这一轮的一段文字；标清楚是附件，不要和用户说的话混为一谈。"""
+    parts = []
+    for item in files:
+        parts.append(
+            "【附件：" + item["name"] + "】\n"
+            + "以下是用户随这条消息发来的文件内容，不是用户对你说的话。\n"
+            + item["text"]
+        )
+    return "\n\n".join(parts)
+
+
 def _memory_card_query(history: list[dict], watch_context: dict | None = None) -> str:
     """Use the current turn plus a little local context for short follow-ups like “继续”."""
     substantive = [
@@ -4048,6 +4085,7 @@ async def _run_ai_reply(chat_id: str, msg_id: str, watch_context: dict | None = 
                         proactive_watch: bool = False, device_time: dict | None = None,
                         focus_context: dict | None = None,
                         attachments: list[dict] | None = None,
+                        text_files: list[dict] | None = None,
                         request_kind: str = "chat_reply"):
     """调用当前聊天所选供应商，边收边发事件给前端。"""
     # 新生成或重新生成都从空 thinking 开始，避免旧推理错配到新回答。
@@ -4218,6 +4256,18 @@ async def _run_ai_reply(chat_id: str, msg_id: str, watch_context: dict | None = 
             )
             messages[index] = {**messages[index], "content": content}
             break
+    # 文件内容跟原图一样只进这一轮，不写进聊天历史。
+    if text_files:
+        block = _text_attachment_block(text_files)
+        for index in range(len(messages) - 1, -1, -1):
+            if messages[index]["role"] != "user":
+                continue
+            existing = messages[index].get("content", "")
+            content = list(existing) if isinstance(existing, list) else [{"type": "text", "text": str(existing)}]
+            content.append({"type": "text", "text": block})
+            messages[index] = {**messages[index], "content": content}
+            break
+
     buf = []
     thinking_buf: list[str] = []
     split_marker = "<dwell-split>"
@@ -4522,11 +4572,18 @@ async def send(request: Request):
     payload = await _read_json(request)
     text = str(payload.get("text", "")).strip()
     attachments = _inline_image_attachments(payload.get("attachments"))
+    text_files = _inline_text_attachments(payload.get("attachments"))
     device_time = _device_time_context(payload.get("device_time"))
     focus_context = _focus_context(payload.get("focus_context"))
-    if not text and not attachments:
-        raise HTTPException(400, "消息和图片不能同时为空")
-    saved_text = text or "（发来了一张图片）"
+    if not text and not attachments and not text_files:
+        raise HTTPException(400, "消息、图片和文件不能同时为空")
+    if text:
+        saved_text = text
+    elif attachments:
+        saved_text = "（发来了一张图片）"
+    else:
+        # 历史里只留文件名——正文跟原图一样只进这一轮，不塞进聊天记录。
+        saved_text = "（发来了文件：" + "、".join(item["name"] for item in text_files) + "）"
 
     chat_id = _get_or_create_current_chat()
 
@@ -4549,7 +4606,7 @@ async def send(request: Request):
 
     task = asyncio.create_task(_run_ai_reply(
         chat_id, placeholder["id"], device_time=device_time,
-        focus_context=focus_context, attachments=attachments
+        focus_context=focus_context, attachments=attachments, text_files=text_files
     ))
     _running_tasks[chat_id] = task
 
