@@ -12139,23 +12139,35 @@ async function takeFiles(list, isImage) {
   renderStrip();
 }
 
+/* 大件分块传上去，服务端读成文字暂存；读好了跟小文件一样挂在附件条上，随下一条消息一起发。 */
+const UPLOAD_MAX = 30 * 1024 * 1024;
 async function bigUpload(f) {
+  if (f.size > UPLOAD_MAX) { note('（' + f.name + ' 太大了，最多 30MB）', 'err'); return; }
   const CHUNK = 4 * 1024 * 1024;
   const total = Math.max(1, Math.ceil(f.size / CHUNK));
-  const tip = note('（在搬 ' + f.name + '…0%）', '', true);
+  const tip = note('（在传 ' + f.name + '…0%）', '', true);
+  let id = '';
   try {
     for (let i = 0; i < total; i++) {
+      const last = i === total - 1;
+      if (last && tip) tip.textContent = '（在读 ' + f.name + '…）';
       const part = f.slice(i * CHUNK, (i + 1) * CHUNK);
       const q = 'api/upload?name=' + encodeURIComponent(f.name)
-        + '&idx=' + i + '&done=' + (i === total - 1 ? 1 : 0);
+        + '&idx=' + i + '&done=' + (last ? 1 : 0) + (id ? '&id=' + encodeURIComponent(id) : '');
       const r = await fetch(q, { method: 'POST', body: part });
-      if (!r.ok) throw new Error('第 ' + (i + 1) + ' 块没过去');
-      if (tip) tip.textContent = '（在搬 ' + f.name + '…' + Math.round((i + 1) / total * 100) + '%）';
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.ok) throw new Error(d.detail || ('第 ' + (i + 1) + ' 块没过去'));
+      id = d.id || id;
+      if (!last && tip) tip.textContent = '（在传 ' + f.name + '…' + Math.round((i + 1) / total * 100) + '%）';
+      if (last) {
+        attachments.push({ kind: 'upload', id, name: f.name });
+        renderStrip();
+        if (tip) { tip.textContent = '（' + f.name + ' 读好了，' + (d.truncated ? '太长只带开头一部分，' : '') + '跟下一条消息一起发）';
+          setTimeout(() => tip.close(), 4200); }
+      }
     }
-    if (tip) { tip.textContent = '（' + f.name + ' 搬到家里了，我这就去看）';
-      setTimeout(() => tip.close(), 4200); }
   } catch (e) {
-    if (tip) { tip.textContent = '（' + f.name + ' 没搬动，' + (e.message || '不知道为什么') + '）';
+    if (tip) { tip.textContent = '（' + f.name + ' 没传上，' + (e.message || '不知道为什么') + '）';
       setTimeout(() => tip.close(), 6000); }
   }
 }

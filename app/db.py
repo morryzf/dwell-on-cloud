@@ -169,6 +169,16 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 CREATE INDEX IF NOT EXISTS ix_messages_chat ON messages(chat_id, made ASC);
 
+-- 大文件读出来的文字，等着跟下一条消息一起发。发出去就删，跟原图一样只进那一轮。
+CREATE TABLE IF NOT EXISTS pending_uploads (
+    id        TEXT PRIMARY KEY,
+    name      TEXT NOT NULL,
+    text      TEXT NOT NULL,
+    size      INTEGER NOT NULL DEFAULT 0,
+    truncated INTEGER NOT NULL DEFAULT 0,
+    made      INTEGER NOT NULL
+);
+
 -- 聊天图片只保存前端压缩后的缩略图。原图仍只用于当次模型请求，避免数据库膨胀。
 CREATE TABLE IF NOT EXISTS message_attachments (
     id         TEXT PRIMARY KEY,
@@ -1263,6 +1273,35 @@ def message_add(chat_id: str, role: str, content: str, made: int | None = None,
             row,
         )
     return row
+
+
+def pending_upload_add(name: str, text: str, size: int = 0, truncated: bool = False) -> dict:
+    """存下一份读好的文件文字。顺手清掉一天前没发出去的（选了又从附件条上删掉的那种）。"""
+    row = {"id": new_id(), "name": name, "text": text, "size": int(size),
+           "truncated": 1 if truncated else 0, "made": int(time.time())}
+    with conn() as cx:
+        cx.execute("DELETE FROM pending_uploads WHERE made < ?", (row["made"] - 86400,))
+        cx.execute(
+            """INSERT INTO pending_uploads (id,name,text,size,truncated,made)
+               VALUES (:id,:name,:text,:size,:truncated,:made)""",
+            row,
+        )
+    return row
+
+
+def pending_upload_take(ids: list[str]) -> list[dict]:
+    """取出这几份文件的文字并删掉——它们只进这一轮。顺序跟 ids 一致。"""
+    ids = [str(item) for item in dict.fromkeys(ids) if item]
+    if not ids:
+        return []
+    marks = ",".join("?" for _ in ids)
+    with conn() as cx:
+        rows = cx.execute(
+            f"SELECT id,name,text,size,truncated FROM pending_uploads WHERE id IN ({marks})", ids
+        ).fetchall()
+        cx.execute(f"DELETE FROM pending_uploads WHERE id IN ({marks})", ids)
+    found = {row["id"]: dict(row) for row in rows}
+    return [found[item] for item in ids if item in found]
 
 
 def message_attachment_add(message_id: str, data_url: str, kind: str = "image") -> dict:

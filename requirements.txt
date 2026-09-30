@@ -8,3 +8,4 @@ pywebpush>=2,<3
 mcp>=1.26,<2
 sse-starlette>=2,<3
 
+pypdf>=5,<7
