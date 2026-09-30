@@ -3693,6 +3693,19 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   #log .gu::before { inset: calc(-1 * var(--msg-cloudy-border-width, 1px)); }
   /* 表单控件画不了 ::before，只留一圈均匀的细边，不再顶上加亮线。 */
   .ap-in { border-color: var(--rim-base) !important; }
+
+  /* 设置、心跳：同一组里的行与行之间不画分隔线，靠间距分开。 */
+  #settingsSheet .group .grow + .grow, #heartbeatSheet .group .grow + .grow { border-top: 0 !important; }
+  /* 心跳：卡片和输入框原来各自又叠一层模糊。套在已经模糊的面板里，手机上里层只能
+     模糊外层那块平底色，看着就是实色。去掉这层，底色和清单页的卡片一样淡。 */
+  #heartbeatSheet :is(.group, .ap-section, .ap-note, .ap-in) {
+    background: rgba(255,255,255,.28) !important;
+    -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  }
+  html[data-theme="dark"] #heartbeatSheet :is(.group, .ap-section, .ap-note, .ap-in) { background: rgba(255,235,244,.10) !important; }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) #heartbeatSheet :is(.group, .ap-section, .ap-note, .ap-in) { background: rgba(255,235,244,.10) !important; }
+  }
 </style>
 </head>
 <body>
