@@ -2253,7 +2253,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   }
   html[data-theme="dark"] {
     --bg: #393538; --card: #4a4448; --panel: #544d51; --line: #6a6065;
-    --text: #fff9fb; --dim: #d1c3c9; --accent: #efb9cb; --accent-soft: #d78da7;
+    --text: #fff9fb; --dim: #d1c3c9; --accent: #a2748e; --accent-soft: #d78da7;
     --user-bubble: #5d4853; --sage: #c0b4bd; --sage-track: #5c545a;
     --pink-track: #654b57; --overlay: rgba(20, 17, 19, .62);
     --glass: color-mix(in srgb, var(--card) 89%, transparent);
@@ -2261,7 +2261,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   @media (prefers-color-scheme: dark) {
     html:not([data-theme="light"]) {
       --bg: #393538; --card: #4a4448; --panel: #544d51; --line: #6a6065;
-      --text: #fff9fb; --dim: #d1c3c9; --accent: #efb9cb; --accent-soft: #d78da7;
+      --text: #fff9fb; --dim: #d1c3c9; --accent: #a2748e; --accent-soft: #d78da7;
       --user-bubble: #5d4853; --sage: #c0b4bd; --sage-track: #5c545a;
       --pink-track: #654b57; --overlay: rgba(20, 17, 19, .62);
       --glass: color-mix(in srgb, var(--card) 89%, transparent);
@@ -2331,6 +2331,13 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   .composer textarea::placeholder, .composer input::placeholder, #box::placeholder { color: color-mix(in srgb, var(--dim) 74%, transparent); }
   #send { background: #deaabd; color: #fff; box-shadow: 0 5px 12px rgba(181, 111, 136, .22); }
   #send:hover { background: #e9b9c9; }
+  /* 暗色模式的主色压深一档：亮粉在深底上太跳，和「采用」「保存节奏」这些主按钮用同一个 #a2748e。 */
+  html[data-theme="dark"] #send { background: #a2748e; box-shadow: 0 5px 12px rgba(0,0,0,.25); }
+  html[data-theme="dark"] #send:hover { background: #ad8199; }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) #send { background: #a2748e; box-shadow: 0 5px 12px rgba(0,0,0,.25); }
+    html:not([data-theme="light"]) #send:hover { background: #ad8199; }
+  }
   #scrollBottom {
     background: rgba(255,255,255,.32) !important;
     border-color: rgba(158,112,133,.18) !important;
@@ -2689,14 +2696,14 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   }
   html[data-theme="dark"] .sheet .ap-b.go {
     color: #fff !important;
-    background: #a6657d !important;
+    background: #a2748e !important;
     border-color: rgba(230,166,189,.34) !important;
     box-shadow: 0 7px 18px rgba(0,0,0,.25), inset 0 1px rgba(255,255,255,.18) !important;
   }
   @media (prefers-color-scheme: dark) {
     html:not([data-theme="light"]) .sheet .ap-b.go {
       color: #fff !important;
-      background: #a6657d !important;
+      background: #a2748e !important;
       border-color: rgba(230,166,189,.34) !important;
       box-shadow: 0 7px 18px rgba(0,0,0,.25), inset 0 1px rgba(255,255,255,.18) !important;
     }
