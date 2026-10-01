@@ -7719,10 +7719,10 @@ function renderDayDetail(ds) {
   p.appendChild(moodRow);
   box.appendChild(p);
 
+  /* 心情走后端的 set_mood。原来发的是 day_record（拆掉生理周期之前的旧动作），
+     后端早就不认了，所以每次都提示「没记上」。只送心情；备注不送，后端就原样留着。 */
   function saveDay(patch) {
-    const rec = calData.period.days[ds] || {};
-    calAct({ action: 'day_record', date: ds, flow: rec.flow || '', pain: rec.pain || 0,
-             mood: rec.mood || '', note: rec.note || '', private: rec.private || '', ...patch });
+    calAct({ action: 'set_mood', date: ds, mood: patch.mood || '' });
   }
   return box;
 }
