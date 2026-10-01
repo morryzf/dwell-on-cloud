@@ -3689,25 +3689,6 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   #log .gu::before { inset: calc(-1 * var(--msg-cloudy-border-width, 1px)); }
   /* 表单控件画不了 ::before，只留一圈均匀的细边，不再顶上加亮线。 */
   .ap-in { border-color: var(--rim-base) !important; }
-  /* 玻璃的厚度：亮边里侧再压一条极细的暗线，边看着是「立」起来的，不是贴了一圈白描边。
-     输入框和里面那排按钮再加一圈很淡的内光，边到中间有个过渡。都只是画上去的阴影，
-     不加毛玻璃；气泡数量多，只加暗线不加内光。画在 ::after 上，紧贴亮边里面。 */
-  :root { --rim-shade: rgba(74,42,58,.12); --rim-glow: rgba(255,255,255,.12); }
-  html[data-theme="dark"] { --rim-shade: rgba(0,0,0,.24); --rim-glow: rgba(255,240,247,.05); }
-  @media (prefers-color-scheme: dark) {
-    html:not([data-theme="light"]) { --rim-shade: rgba(0,0,0,.24); --rim-glow: rgba(255,240,247,.05); }
-  }
-  #log .gu::after, #log .bubble::after, .composer::after, .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill)::after,
-  .msg-preview-me::after, .msg-preview-cloudy::after {
-    content: ''; position: absolute; pointer-events: none; z-index: 1;
-    inset: calc(var(--rim-w) - var(--glass-border, 1px)); border-radius: inherit;
-    box-shadow: inset 0 0 0 1px var(--rim-shade);
-  }
-  #log .bubble::after { inset: calc(var(--rim-w) - var(--msg-me-border-width, 1px)); }
-  #log .gu::after { inset: calc(var(--rim-w) - var(--msg-cloudy-border-width, 1px)); }
-  .composer::after, .ctlrow > :is(#plusBtn, #instructionsBtn, #mcpChatBtn, #reasoningBtn, #voiceBtn, #modelPill)::after {
-    box-shadow: inset 0 0 0 1px var(--rim-shade), inset 0 0 6px 2px var(--rim-glow);
-  }
 
   /* 已保存的供应商、聊天指令：列表里行与行之间的线细一半（0.5px）。
      用 inset 阴影画：0.5px 的 border 有的浏览器会取整成 1px。 */
