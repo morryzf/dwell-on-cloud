@@ -6549,6 +6549,22 @@ box.addEventListener('input', () => {
 
 const footerEl = document.querySelector('footer');
 let kbShift = 0, kbGap = 0;
+/* 点输入框时 iPhone 会把整个页面往上推，好让输入框露在键盘上面——推的是浏览器自己那层，
+   网页事后才知道，按回去也总会闪一帧（录屏里整页往下一闪再回来，就是这一推一按）。
+   办法是不给它推的理由：手指一抬，先把输入卡挪到键盘将来的上沿，再让它获得焦点。
+   系统一看输入框本来就在键盘上面，就不推了。键盘真上来以后照常按实际位置校准。
+   键盘有多高记在本机，第一次没有记录就按屏幕高度的 42% 估。 */
+let kbPreShift = 0, kbPreShiftTimer = 0;
+function kbGuess() {
+  let saved = 0;
+  try { saved = Number(localStorage.getItem('dwell.kbLift')) || 0; } catch {}
+  return saved > 100 ? saved : Math.round(window.innerHeight * 0.42);
+}
+function endKbPreShift() {
+  if (!kbPreShift) return;
+  kbPreShift = 0;
+  clearTimeout(kbPreShiftTimer);
+}
 function sheetIsOpen() { return !!document.querySelector('.sheetWrap.open'); }
 function resetChatKeyboardAdjustment() {
   kbShift = 0; kbGap = 0;
@@ -6570,6 +6586,8 @@ function fitKeyboard() {
      现在改成：只要可视区被顶起来（offsetTop>1）或明显变矮，就算键盘开着。 */
   kbGap = Math.max(0, Math.round(window.innerHeight - vv.height));
   const on = vv.offsetTop > 1 || kbGap > 20;
+  if (on) endKbPreShift();
+  else if (kbPreShift) return;      // 先挪上去了，键盘还在路上：别把输入卡拽回去
   if (on && window.scrollY !== 0) window.scrollTo(0, 0);   // 先把 iOS 偷推的那一下按回去
   footerEl.style.paddingBottom = on ? '4px' : '';
   const seen = vv.offsetTop + vv.height;             // 眼睛能看到的最低那条线
@@ -6596,7 +6614,10 @@ function trackKeyboard() {
     if (me !== kbTracking) return;
     fitKeyboard();
     if (++n < 45) requestAnimationFrame(tick);
-    else if (kbGap > 20) scroll(true);
+    else if (kbGap > 20) {
+      scroll(true);
+      try { if (kbShift < -100) localStorage.setItem('dwell.kbLift', String(Math.round(-kbShift))); } catch {}
+    }
   };
   tick();
 }
@@ -6686,6 +6707,23 @@ if (location.search.includes('kb=1')) {
   };
   tick();
 }
+box.addEventListener('touchend', (e) => {
+  // 键盘已经在（挪光标、长按选字）就不管，只接管「键盘还没出来」那一下。
+  // 不能拿「输入框有没有焦点」判断：页面一打开就让它拿了焦点，iPhone 上那时并没有键盘。
+  if (kbShift < 0 || kbGap > 20 || sheetIsOpen() || e.touches.length) return;
+  e.preventDefault();
+  const lift = kbGuess();
+  kbPreShift = lift;
+  kbShift = -lift;
+  footerEl.style.transform = 'translateY(' + kbShift + 'px)';
+  // 键盘没出来（外接键盘之类）就放回原处
+  clearTimeout(kbPreShiftTimer);
+  kbPreShiftTimer = setTimeout(() => { endKbPreShift(); fitKeyboard(); }, 900);
+  if (document.activeElement === box) box.blur();   // 已经有焦点的话，重新给一次才会叫出键盘
+  box.focus({ preventScroll: true });
+  const end = box.value.length;
+  try { box.setSelectionRange(end, end); } catch {}
+}, { passive: false });
 box.addEventListener('focus', trackKeyboard);
 box.addEventListener('blur', () => setTimeout(trackKeyboard, 50));
 new ResizeObserver(() => {
