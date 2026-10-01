@@ -4649,10 +4649,26 @@ const farRows = new IntersectionObserver(entries => {
     if (e.isIntersecting) e.target.classList.remove('far');
     else if (!e.target.classList.contains('far')) going.push([e.target, e.target.getBoundingClientRect().height]);
   }
+  /* 占位高度只算内容那一格：有用量那一行底下多 20px 的留白，留白不画也照样占着。
+     当初把留白也算进去，每藏一行就高出 20px——Safari 没有滚动锚定，眼前的消息就跟着
+     上下抖，选择模式也会跑位。所以挂上之后再量一遍，差多少补多少，必须一点不差。 */
   for (const [el, h] of going) {   // 先量完再改，免得量一个排一次版
     if (!h) continue;
-    el.style.containIntrinsicSize = '0px ' + h + 'px';
+    const c = getComputedStyle(el);
+    const box = h - parseFloat(c.paddingTop) - parseFloat(c.paddingBottom)
+      - parseFloat(c.borderTopWidth) - parseFloat(c.borderBottomWidth);
+    el.style.containIntrinsicSize = '0px ' + Math.max(0, box) + 'px';
     el.classList.add('far');
+    el._farH = h;
+  }
+  for (const [el, h] of going) {
+    if (!el._farH) continue;
+    const off = el.getBoundingClientRect().height - h;
+    if (Math.abs(off) > 0.1) {
+      const now = parseFloat(el.style.containIntrinsicSize.split(' ')[1]) || 0;
+      el.style.containIntrinsicSize = '0px ' + Math.max(0, now - off) + 'px';
+    }
+    el._farH = 0;
   }
 }, { root: log, rootMargin: '150% 0px' });
 new MutationObserver(list => {
@@ -6567,27 +6583,20 @@ function fitKeyboard() {
     kbShift = 0;
     footerEl.style.transform = '';
   }
-  /* 键盘起落那 0.3 秒，iOS 会把逐帧改排版的活儿压成幻灯片。这期间只挪输入卡
-     （它走的是 translateY，不用重排），消息列表的留白等键盘停稳了一次改好。 */
-  if (!kbAnimating) {
-    log.style.paddingBottom = (footerEl.offsetHeight + (on ? -kbShift + 16 : 48)) + 'px';
-    clampLogScroll();
-  }
+  log.style.paddingBottom = (footerEl.offsetHeight + (on ? -kbShift + 16 : 48)) + 'px';
+  clampLogScroll();
   if (on && window.scrollY !== 0) window.scrollTo(0, 0);
 }
 /* 键盘是动画上来的（约 0.3 秒），头尾各校一次会卡在半路——整段动画都盯着 */
-let kbTracking = 0, kbAnimating = false;
+let kbTracking = 0;
 function trackKeyboard() {
   const me = ++kbTracking;
   let n = 0;
-  kbAnimating = true;
   const tick = () => {
     if (me !== kbTracking) return;
     fitKeyboard();
-    if (++n < 45) { requestAnimationFrame(tick); return; }
-    kbAnimating = false;
-    fitKeyboard();                  // 停稳了：留白一次改到位
-    if (kbGap > 20) scroll(true);
+    if (++n < 45) requestAnimationFrame(tick);
+    else if (kbGap > 20) scroll(true);
   };
   tick();
 }
