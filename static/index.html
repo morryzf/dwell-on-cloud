@@ -2759,7 +2759,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     -webkit-appearance: none; appearance: none;
     width: 22px; height: 22px; border-radius: 50%;
     background: #e8b4c4;
-    border: 2px solid rgba(255,255,255,.7);
+    border: 1px solid rgba(255,255,255,.7);
     box-shadow: 0 2px 8px rgba(140,85,108,.22);
     margin-top: -8.5px;
   }
@@ -2772,7 +2772,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     background: linear-gradient(90deg, var(--accent), var(--accent-soft));
   }
   input[type="range"].ap-in::-moz-range-thumb {
-    width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.7);
+    width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(255,255,255,.7);
     background: #e8b4c4;
     box-shadow: 0 2px 8px rgba(140,85,108,.22);
   }
@@ -2797,6 +2797,38 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     }
   }
   #backgroundOverlay { accent-color: var(--accent); }
+  /* 气泡样式 / 玻璃样式的调节条、语音窗的进度条：不用系统自带的样子（外面一圈粗框、轨道发黑），
+     和背景遮罩那根一个画法——细轨道，左边填粉，圆钮只描一圈 1px 的白边。 */
+  :is(.msg-style-control input[type="range"], #ttsPlayerSeek) {
+    -webkit-appearance: none; appearance: none; background: transparent; border: 0; outline: 0;
+    height: 24px; margin: 0; padding: 0; cursor: pointer;
+  }
+  :is(.msg-style-control input[type="range"], #ttsPlayerSeek)::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px; border: 0;
+    background: linear-gradient(90deg, var(--accent) var(--range-pct, 0%), rgba(158,112,133,.16) var(--range-pct, 0%));
+  }
+  :is(.msg-style-control input[type="range"], #ttsPlayerSeek)::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; border-radius: 50%; margin-top: -7px;
+    background: #e8b4c4; border: 1px solid rgba(255,255,255,.7);
+    box-shadow: 0 1px 5px rgba(140,85,108,.22);
+  }
+  #ttsPlayerSeek::-webkit-slider-thumb { width: 14px; height: 14px; margin-top: -5px; }
+  :is(.msg-style-control input[type="range"], #ttsPlayerSeek)::-moz-range-track { height: 4px; border-radius: 2px; border: 0; background: rgba(158,112,133,.16); }
+  :is(.msg-style-control input[type="range"], #ttsPlayerSeek)::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
+  :is(.msg-style-control input[type="range"], #ttsPlayerSeek)::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%; background: #e8b4c4; border: 1px solid rgba(255,255,255,.7);
+  }
+  html[data-theme="dark"] :is(.msg-style-control input[type="range"], #ttsPlayerSeek)::-webkit-slider-runnable-track {
+    background: linear-gradient(90deg, var(--accent) var(--range-pct, 0%), rgba(255,220,235,.12) var(--range-pct, 0%));
+  }
+  html[data-theme="dark"] :is(.msg-style-control input[type="range"], #ttsPlayerSeek)::-webkit-slider-thumb { background: #c08a9c; border-color: rgba(255,235,244,.35); }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme="light"]) :is(.msg-style-control input[type="range"], #ttsPlayerSeek)::-webkit-slider-runnable-track {
+      background: linear-gradient(90deg, var(--accent) var(--range-pct, 0%), rgba(255,220,235,.12) var(--range-pct, 0%));
+    }
+    html:not([data-theme="light"]) :is(.msg-style-control input[type="range"], #ttsPlayerSeek)::-webkit-slider-thumb { background: #c08a9c; border-color: rgba(255,235,244,.35); }
+  }
   .lk-time {
     position: relative;
     --clock-glass-top: rgba(244,221,231,.84);
@@ -2856,11 +2888,14 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     position: relative; z-index: 1; padding: 11px 14px; gap: 8px;
     font-size: 14px; line-height: 1.28;
   }
-  .composer-model-swipe {
-    position: relative; overflow: hidden; min-height: 46px;
-    background: color-mix(in srgb, var(--accent) 72%, #a86f85);
-  }
-  .composer-model-swipe + .composer-model-swipe { border-top: 1px solid var(--line); }
+  /* 底下那层粉只在左滑时露出来：行本身是半透明的玻璃，粉一直垫着的话整行都发粉，
+     行与行之间的缝也透出一道粉线。分隔线画在行上，0.5px。 */
+  .composer-model-swipe { position: relative; overflow: hidden; min-height: 46px; }
+  .composer-model-swipe.peeking, .composer-model-swipe.open { background: color-mix(in srgb, var(--accent) 72%, #a86f85); }
+  .composer-model-swipe + .composer-model-swipe .composer-model-row { box-shadow: inset 0 .5px 0 var(--line); }
+  /* 行不自带底色，和下面 Effort 那组一个颜色；左滑时才垫实色，把底下的「移出常用」盖住 */
+  .group .composer-model-swipe .composer-model-row { background: transparent; }
+  .group .composer-model-swipe:is(.peeking, .open) .composer-model-row { background: var(--bg); }
   .composer-model-swipe .composer-model-row {
     min-height: 46px; background: var(--panel);
     touch-action: pan-y; will-change: transform;
@@ -2879,6 +2914,19 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s;
   }
   .composer-model-remove:active { filter: brightness(.92); }
+  /* 输入框的模型面板：贴着内容的高度，不撑满；头上左右两格一样宽，标题才居中 */
+  #modelSheet:not(.sub) .sheet { min-height: 0; max-height: 78vh; }
+  #modelSheet .head { display: grid; grid-template-columns: 76px 1fr 76px; }
+  #modelSheet .head .hbtn { justify-self: start; }
+  #modelSheet .head .model-think-space { display: none; }
+  #modelSheet.sub .head .model-think-space, #modelSheet.catalog .head .model-think-space { display: block; justify-self: end; }
+  #modelSheet.sub .model-think, #modelSheet.catalog .model-think { display: none; }
+  .model-think { justify-self: end; display: flex; align-items: center; gap: 7px; height: 40px; color: var(--dim); }
+  .model-think .ic { width: 15px; height: 15px; }
+  .model-think[aria-pressed="true"] .ic { color: var(--accent); }
+  .model-think .sw { width: 40px; height: 24px; }
+  .model-think .sw::after { width: 20px; height: 20px; }
+  .model-think .sw.on::after { transform: translateX(16px); }
   .model-swipe-hint { float: right; padding-top: 1px; font-size: 11px; letter-spacing: 0; opacity: .8; }
 
   /* Todo groups are layout containers, not another glass card around the rows. */
@@ -3759,7 +3807,7 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   /* 输入框各按钮打开的面板（加号、指令、工具、思考、模型）：里面行与行之间的线细一半（0.5px）。
      原来的 1px 边框留着位置但透明，线改用 inset 阴影画——0.5px 的 border 有的浏览器会取整成 1px。 */
   :is(#addSheet, #chatInstructionsSheet, #chatMcpSheet, #reasoningSheet, #modelSheet)
-    :is(.group .grow + .grow, .mrow + .mrow, .composer-model-swipe + .composer-model-swipe, .chat-mcp-detail, .model-catalog-row) {
+    :is(.group .grow + .grow, .mrow + .mrow, .chat-mcp-detail, .model-catalog-row) {
     border-top-color: transparent !important;
     box-shadow: inset 0 .5px 0 var(--line) !important;
   }
@@ -3849,7 +3897,6 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
 <button id="plusBtn" title="添加照片和文件"><span class="ic" data-i="plus"></span></button>
 <button id="instructionsBtn" title="这间聊天的指令"><span class="ic" data-i="layers"></span></button>
 <button id="mcpChatBtn" title="这间聊天的工具"><span class="ic" data-i="tool"></span></button>
-<button id="reasoningBtn" title="thinking 与推理强度" aria-label="thinking 与推理强度" aria-pressed="true"><span class="ic" data-i="bulb"></span></button>
       <button class="pill" id="modelPill">…</button>
       <span class="gap"></span>
       <button id="send" title="发送"><span class="ic" data-i="arrowUp"></span></button>
@@ -4091,14 +4138,6 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   <div class="sheet"><div class="grabber"></div><div class="head">
     <button class="hbtn" data-close="chatMcp"><span class="ic" data-i="x"></span></button><div class="ht">这间聊天的工具</div><div class="hspace"></div>
   </div><div class="body" id="chatMcpBody"></div></div>
-</div>
-
-<div class="sheetWrap" id="reasoningSheet">
-  <div class="shade" data-close="reasoning"></div>
-  <div class="sheet"><div class="grabber"></div><div class="head">
-    <button class="hbtn" data-close="reasoning"><span class="ic" data-i="x"></span></button>
-    <div class="ht">thinking</div><div class="hspace"></div>
-  </div><div class="body" id="reasoningBody"></div></div>
 </div>
 
 <div class="sheetWrap" id="editMessageSheet">
@@ -4407,7 +4446,8 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
     <div class="head">
       <button class="hbtn" id="modelBack"><span class="ic" data-i="x"></span></button>
       <div class="ht" id="modelTitle">Select model</div>
-      <div class="hspace"></div>
+      <button class="model-think" id="modelThink" type="button" aria-label="thinking" title="thinking" aria-pressed="true"><span class="ic" data-i="bulb"></span><span class="sw on"></span></button>
+      <div class="hspace model-think-space"></div>
     </div>
     <div class="body" id="modelBody"></div>
   </div>
@@ -5118,7 +5158,7 @@ function openMessageEditor(message) {
   body.querySelector('#editMessageText').value = message.text || '';
   body.querySelector('#editMessageSave').onclick = async () => {
     const content = body.querySelector('#editMessageText').value.trim(); const msg = body.querySelector('#editMessageMsg');
-    try { const r = await (await fetch('api/messages/' + encodeURIComponent(message.id), {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({content})})).json(); if(!r.ok) throw new Error(r.detail||'没有保存'); sheets.editMessage.classList.remove('open'); await loadSaid(); if (r.format_learned_now) note('（保存好了，Claude 会参考你校正过的分条节奏）'); }
+    try { const r = await (await fetch('api/messages/' + encodeURIComponent(message.id), {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({content})})).json(); if(!r.ok) throw new Error(r.detail||'没有保存'); sheets.editMessage.classList.remove('open'); await reloadSaidKeepingPlace(message.id); if (r.format_learned_now) note('（保存好了，Claude 会参考你校正过的分条节奏）'); }
     catch (e) { msg.textContent = '没存上：' + e.message; msg.className = 'ap-msg on bad'; }
   };
   sheets.editMessage.classList.add('open');
@@ -5814,6 +5854,28 @@ async function loadSaid(focusMessageId = '') {
     lockToBottom();
     return d.upto || 0;
   } catch (e) { return 0; }
+}
+
+/* 重画整段聊天，但眼睛停在原来那句上（编辑完保存用）。loadSaid 默认会滚到最新，
+   这里记下那句离顶边多远，重画后放回去；原来就在底部的照旧贴底。 */
+async function reloadSaidKeepingPlace(messageId) {
+  const edge = () => log.getBoundingClientRect().top;
+  const find = id => id ? log.querySelector('.row[data-message-id="' + CSS.escape(id) + '"]') : null;
+  const anchor = find(messageId)
+    || [...log.querySelectorAll('.row[data-message-id]')].find(el => el.getBoundingClientRect().bottom > edge());
+  const anchorId = anchor ? anchor.dataset.messageId : '';
+  const offset = anchor ? anchor.getBoundingClientRect().top - edge() : 0;
+  const wasBottom = atBottom();
+  // 先按平常那样读最新一段；那句话太早、不在里面，再按它读——按它读的那段到它为止，
+  // 它会排在最后，所以不能一上来就用。
+  let upto = await loadSaid();
+  if (anchorId && !find(anchorId)) upto = await loadSaid(anchorId);
+  if (wasBottom) return upto;
+  releaseBottomLock();
+  const again = find(anchorId);
+  if (again) log.scrollTop += again.getBoundingClientRect().top - edge() - offset;
+  updateScrollBtn();
+  return upto;
 }
 
 let resultSyncTimer = null;
@@ -6823,7 +6885,6 @@ const sheets = {
   messageStyle: document.getElementById('messageStyleSheet'),
   mcp: document.getElementById('mcpSheet'),
   chatMcp: document.getElementById('chatMcpSheet'),
-  reasoning: document.getElementById('reasoningSheet'),
   editMessage: document.getElementById('editMessageSheet'),
   messageVersions: document.getElementById('messageVersionsSheet'),
   kelivoImport: document.getElementById('kelivoImportSheet'),
@@ -7232,7 +7293,7 @@ async function playTts(messageId, userInitiated = false, cachedOnly = false) {
   document.getElementById('ttsPlayerStatus').textContent = cachedOnly ? '正在读取缓存…' : '正在生成或读取缓存…';
   document.getElementById('ttsPlayerCurrent').textContent = '0:00';
   document.getElementById('ttsPlayerDuration').textContent = '0:00';
-  ttsPlayerSeek.value = 0; ttsPlayerToggle.disabled = true;
+  ttsPlayerSeek.value = 0; paintRange(ttsPlayerSeek); ttsPlayerToggle.disabled = true;
   setTtsPlayerIcon(ttsPlayerToggle, 'dots');
   try {
     const suffix = cachedOnly ? '?cached_only=true' : '';
@@ -7258,13 +7319,13 @@ async function playTts(messageId, userInitiated = false, cachedOnly = false) {
     audio.ontimeupdate = () => {
       if (playerRunId !== ttsState.playerRunId) return;
       document.getElementById('ttsPlayerCurrent').textContent = ttsClock(audio.currentTime);
-      if (Number.isFinite(audio.duration) && audio.duration > 0) ttsPlayerSeek.value = Math.round(audio.currentTime / audio.duration * 1000);
+      if (Number.isFinite(audio.duration) && audio.duration > 0) { ttsPlayerSeek.value = Math.round(audio.currentTime / audio.duration * 1000); paintRange(ttsPlayerSeek); }
     };
     audio.onplay = () => { if (playerRunId === ttsState.playerRunId) setTtsPlayerIcon(ttsPlayerToggle, 'mediaPause'); };
     audio.onpause = () => { if (playerRunId === ttsState.playerRunId && !audio.ended) setTtsPlayerIcon(ttsPlayerToggle, 'mediaPlay'); };
     audio.onended = () => {
       if (playerRunId !== ttsState.playerRunId) return;
-      setTtsPlayerIcon(ttsPlayerToggle, 'mediaPlay'); ttsPlayerSeek.value = 1000;
+      setTtsPlayerIcon(ttsPlayerToggle, 'mediaPlay'); ttsPlayerSeek.value = 1000; paintRange(ttsPlayerSeek);
       const index = ttsQueueIndex();
       const next = index >= 0 ? ttsState.queue[index + 1] : null;
       if (ttsState.playMode === 'continuous' && next) {
@@ -10728,6 +10789,18 @@ const MESSAGE_STYLE_CONTROLS = [
   { key: 'text', label: '文字颜色', type: 'color' },
   { key: 'radius', label: '圆角半径', type: 'range', min: 4, max: 32, step: 1 }
 ];
+/* 调节条左边那段粉色靠 --range-pct 画。手拖时统一在这里更新；代码直接改 value 的地方
+   （语音进度、重画面板）自己调一下 paintRange。 */
+function paintRange(inp) {
+  const min = Number(inp.min) || 0, max = Number(inp.max) || 100;
+  const pct = max > min ? (Number(inp.value) - min) / (max - min) * 100 : 0;
+  inp.style.setProperty('--range-pct', Math.max(0, Math.min(100, pct)) + '%');
+}
+function paintRanges(root) { (root || document).querySelectorAll('input[type="range"]').forEach(paintRange); }
+document.addEventListener('input', event => {
+  if (event.target instanceof HTMLInputElement && event.target.type === 'range') paintRange(event.target);
+}, true);
+
 function renderMessageStyleSettings() {
   const body = document.getElementById('messageStyleBody');
   const roleLabel = messageStyleRole === 'me' ? '我的消息' : 'Claude 的消息';
@@ -10792,6 +10865,7 @@ function renderMessageStyleSettings() {
     controls.appendChild(wrap);
   });
   renderInterfaceGlassControls();
+  paintRanges(body);
 
   body.querySelector('#messageStyleCopy').onclick = () => {
     messageStyleState[otherRole][messageStyleTab] = cloneMessageStyle(current);
@@ -11991,125 +12065,13 @@ async function setThinkingVisibility(show) {
   }
 }
 
-const reasoningBtn = document.getElementById('reasoningBtn');
-const reasoningBody = document.getElementById('reasoningBody');
-
+/* thinking 开关挪到了模型面板右上角，这里只负责把它的样子对上。 */
 function syncReasoningButton() {
-  reasoningBtn.classList.toggle('on', curShowThinking);
-  reasoningBtn.setAttribute('aria-pressed', String(curShowThinking));
-  reasoningBtn.title = curShowThinking
-    ? 'thinking 已开启 · 推理强度 ' + (EFFORTS.find(e => e.id === curEffort)?.name || curEffort)
-    : 'thinking 已关闭';
+  const t = document.getElementById('modelThink');
+  if (!t) return;
+  t.setAttribute('aria-pressed', String(curShowThinking));
+  t.querySelector('.sw').classList.toggle('on', curShowThinking);
 }
-
-function reasoningEffortRow(effort) {
-  const row = document.createElement('button');
-  row.className = 'grow';
-  const copy = document.createElement('span');
-  copy.textContent = effort.name;
-  row.appendChild(copy);
-  if (effort.desc) {
-    const value = document.createElement('span');
-    value.className = 'val';
-    value.textContent = effort.desc;
-    row.appendChild(value);
-  }
-  if (curEffort === effort.id) {
-    const check = icEl('check', 18);
-    check.style.marginLeft = effort.desc ? '0' : 'auto';
-    row.appendChild(check);
-  }
-  row.onclick = async () => {
-    if (curEffort === effort.id) return;
-    row.disabled = true;
-    try {
-      const response = await fetch('api/model', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({effort: effort.id})
-      });
-      const data = await response.json();
-      if (!response.ok || !data.ok) throw new Error(data.detail || '没有保存');
-      curEffort = data.effort || effort.id;
-      syncReasoningButton();
-      renderReasoningControls();
-      note('（推理强度已调到 ' + effort.name + '）');
-    } catch (error) {
-      row.disabled = false;
-      note('（推理强度没存上：' + error.message + '）', 'err');
-    }
-  };
-  return row;
-}
-
-function renderReasoningControls() {
-  reasoningBody.innerHTML = '';
-  const intro = document.createElement('div');
-  intro.className = 'sh-head';
-  intro.innerHTML = '<h1>thinking</h1><div class="sub">控制这间聊天之后的新回复是否使用思考模式。过去保存的 thinking 会一直留在聊天记录中。</div>';
-  reasoningBody.appendChild(intro);
-
-  const displayLabel = document.createElement('div');
-  displayLabel.className = 'group-label';
-  displayLabel.textContent = '思考模式';
-  reasoningBody.appendChild(displayLabel);
-  const displayGroup = document.createElement('div');
-  displayGroup.className = 'group';
-  const thinkingRow = document.createElement('button');
-  thinkingRow.className = 'grow';
-  thinkingRow.setAttribute('aria-pressed', String(curShowThinking));
-  thinkingRow.innerHTML = '<span>thinking</span><span class="sw' + (curShowThinking ? ' on' : '') + '"></span>';
-  thinkingRow.onclick = async () => {
-    thinkingRow.disabled = true;
-    try {
-      const response = await fetch('api/model', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({show_thinking: !curShowThinking})
-      });
-      const data = await response.json();
-      if (!response.ok || !data.ok) throw new Error(data.detail || '没有保存');
-      curShowThinking = data.show_thinking !== false;
-      syncReasoningButton();
-      renderReasoningControls();
-      await loadSaid();
-    } catch (error) {
-      thinkingRow.disabled = false;
-      note('（thinking 设置没存上：' + error.message + '）', 'err');
-    }
-  };
-  displayGroup.appendChild(thinkingRow);
-  reasoningBody.appendChild(displayGroup);
-
-  const effortLabel = document.createElement('div');
-  effortLabel.className = 'group-label';
-  effortLabel.textContent = '推理强度';
-  reasoningBody.appendChild(effortLabel);
-  const effortGroup = document.createElement('div');
-  effortGroup.className = 'group';
-  EFFORTS.forEach(effort => effortGroup.appendChild(reasoningEffortRow(effort)));
-  reasoningBody.appendChild(effortGroup);
-
-  const hint = document.createElement('div');
-  hint.className = 'gnote';
-  hint.textContent = '关闭后，新回复会明确请求不使用 thinking；以前已经生成的 thinking 不会被隐藏或删除。';
-  reasoningBody.appendChild(hint);
-  fillIcons(reasoningBody);
-}
-
-async function openReasoningSheet() {
-  reasoningBody.innerHTML = '<div class="gnote">正在读取这间聊天的推理设置…</div>';
-  sheets.reasoning.classList.add('open');
-  try {
-    const data = await (await fetch('api/model', {cache:'no-store'})).json();
-    curEffort = data.effort || 'high';
-    curShowThinking = data.show_thinking !== false;
-    syncReasoningButton();
-    renderReasoningControls();
-  } catch (error) {
-    reasoningBody.innerHTML = '<div class="gnote">推理设置没拿到，等会儿再开一次。</div>';
-  }
-}
-reasoningBtn.onclick = openReasoningSheet;
-
 
 /* 读这间聊天现在用的模型。启动时读一次，换窗口时也要读——不然胶囊上还挂着上一间的模型，
    要等新窗口回第一句话才改过来。 */
@@ -12145,6 +12107,7 @@ async function chooseCatalogModel(item) {
     if (!r.ok) throw new Error(r.detail || '没有切换');
     currentProviderId = item.provider_id || currentProviderId;
     curPromptCacheTtl = r.prompt_cache_ttl || curPromptCacheTtl;
+    bumpModelUse(item);
     setModelPill(item.model_id); modelSheetEl.classList.remove('open');
     note('（这间聊天换成 ' + item.model_id + ' 了）');
   } catch (e) { note('（没换上：' + e.message + '）', 'err'); }
@@ -12296,20 +12259,22 @@ async function setChatPromptCacheTtl(ttl, button) {
   }
 }
 
-function renderPromptCachePicker() {
+function promptCacheAvailable() {
   const provider = (catalogData.providers || []).find(
     item => item.id === currentProviderId
   );
   const model = String(curModel || '').toLowerCase();
   let openrouterHost = '';
   try { openrouterHost = new URL(provider && provider.base_url || '').hostname.toLowerCase(); } catch (error) {}
-  const cacheable = provider && model.includes('claude') && (
+  return !!(provider && model.includes('claude') && (
     provider.provider_type === 'claude_compatible'
     || (provider.provider_type === 'openrouter'
       && openrouterHost === 'openrouter.ai'
       && model.startsWith('anthropic/'))
-  );
-  if (!cacheable) return null;
+  ));
+}
+function renderPromptCachePicker() {
+  if (!promptCacheAvailable()) return null;
   const select = document.createElement('select');
   select.className = 'ap-in';
   select.setAttribute('aria-label', '这间聊天的缓存时长');
@@ -12328,37 +12293,142 @@ function renderPromptCachePicker() {
   return select;
 }
 
+/* 输入框的模型面板，照 Claude 的样子排：最常用的四个在上面，其余常用的收进 More models；
+   Effort、缓存各一行，点进去再选；thinking 开关在右上角。 */
+let pickerView = 'main';   // main | more | effort | cache
+function modelUseCounts() {
+  try { return JSON.parse(localStorage.getItem('dwell.modelUse') || '{}') || {}; } catch { return {}; }
+}
+function bumpModelUse(item) {
+  try {
+    const counts = modelUseCounts();
+    const key = item.provider_id + '|' + item.model_id;
+    counts[key] = (counts[key] || 0) + 1;
+    localStorage.setItem('dwell.modelUse', JSON.stringify(counts));
+  } catch {}
+}
+/* 常用模型按「在这台设备上选过几次」排，前四个放外面；正在用的不在前四就顶掉第四个。 */
+function splitFavorites() {
+  const counts = modelUseCounts();
+  const key = item => item.provider_id + '|' + item.model_id;
+  const isCurrent = item => item.provider_id === currentProviderId && item.model_id === curModel;
+  const list = (catalogData.favorites || []).map((item, i) => [item, i])
+    .sort((a, b) => (counts[key(b[0])] || 0) - (counts[key(a[0])] || 0) || a[1] - b[1])
+    .map(pair => pair[0]);
+  let top = list.slice(0, 4);
+  if (curModel && !top.some(isCurrent)) {
+    const current = list.find(isCurrent)
+      || (catalogData.items || []).find(isCurrent)
+      || { provider_id: currentProviderId, model_id: curModel };
+    top = top.slice(0, 3).concat(current);
+  }
+  return { top, rest: list.filter(item => !top.includes(item)) };
+}
+function pickerGroup(rows) {
+  const group = document.createElement('div'); group.className = 'group';
+  rows.forEach(row => group.appendChild(row));
+  modelBody.appendChild(group);
+  return group;
+}
+function pickerGap() {
+  const gap = document.createElement('div'); gap.className = 'group-label'; modelBody.appendChild(gap);
+}
+function pickerNavRow(label, value, onclick) {
+  const row = document.createElement('button'); row.className = 'grow';
+  const name = document.createElement('span'); name.textContent = label; row.appendChild(name);
+  if (value) { const v = document.createElement('span'); v.className = 'val'; v.textContent = value; row.appendChild(v); }
+  const chev = document.createElement('span'); chev.className = 'chev'; chev.textContent = '›';
+  if (!value) chev.style.marginLeft = 'auto';
+  row.appendChild(chev);
+  row.onclick = onclick;
+  return row;
+}
+const CACHE_TTLS = [
+  { id: 'off', name: '关闭', desc: '' },
+  { id: '5m', name: '5 分钟', desc: '' },
+  { id: '1h', name: '1 小时', desc: '' },
+];
+async function saveChatModelSetting(body) {
+  const response = await fetch('api/model', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok || !data.ok) throw new Error(data.detail || '没有保存');
+  return data;
+}
+function renderComposerPicker() {
+  modelBack.innerHTML = '';
+  modelBack.appendChild(icEl(pickerView === 'main' ? 'x' : 'chevL', 16));
+  modelTitle.textContent = { main: '切换模型', more: 'More models', effort: 'Effort', cache: '缓存' }[pickerView];
+  if (pickerView === 'main') {
+    const { top } = splitFavorites();
+    if (top.length) pickerGroup(top.map(item => composerModelSwipeRow(item, !!item.favorite)));
+    else { const empty = document.createElement('div'); empty.className = 'gnote'; empty.textContent = '还没有常用模型。常用项请在设置的模型目录里管理。'; modelBody.appendChild(empty); }
+    pickerGap();
+    const settings = [pickerNavRow('Effort', EFFORTS.find(e => e.id === curEffort)?.name || 'High',
+      () => { pickerView = 'effort'; renderProviderModelPicker(); })];
+    if (promptCacheAvailable()) {
+      settings.push(pickerNavRow('缓存', CACHE_TTLS.find(c => c.id === curPromptCacheTtl)?.name || '关闭',
+        () => { pickerView = 'cache'; renderProviderModelPicker(); }));
+    }
+    pickerGroup(settings);
+    pickerGap();
+    pickerGroup([pickerNavRow('More models', '', () => { pickerView = 'more'; renderProviderModelPicker(); })]);
+  } else if (pickerView === 'more') {
+    const { rest } = splitFavorites();
+    if (rest.length) {
+      const label = document.createElement('div'); label.className = 'group-label'; label.textContent = '其他常用';
+      const hint = document.createElement('span'); hint.className = 'model-swipe-hint'; hint.textContent = '左滑可移出'; label.appendChild(hint);
+      modelBody.appendChild(label);
+      pickerGroup(rest.map(item => composerModelSwipeRow(item, true)));
+      pickerGap();
+    }
+    pickerGroup([pickerNavRow('浏览模型库', '', () => { catalogMode = 'browse'; renderProviderModelPicker(); })]);
+  } else if (pickerView === 'effort') {
+    pickerGroup(EFFORTS.map(effort => mrowEl(effort, curEffort === effort.id, async () => {
+      if (curEffort === effort.id) { pickerView = 'main'; renderProviderModelPicker(); return; }
+      try {
+        const data = await saveChatModelSetting({ effort: effort.id });
+        curEffort = data.effort || effort.id;
+        pickerView = 'main'; renderProviderModelPicker();
+      } catch (error) { note('（推理强度没存上：' + error.message + '）', 'err'); }
+    })));
+  } else if (pickerView === 'cache') {
+    pickerGroup(CACHE_TTLS.map(ttl => mrowEl(ttl, curPromptCacheTtl === ttl.id, async () => {
+      if (curPromptCacheTtl === ttl.id) { pickerView = 'main'; renderProviderModelPicker(); return; }
+      try {
+        const data = await saveChatModelSetting({ prompt_cache_ttl: ttl.id });
+        curPromptCacheTtl = data.prompt_cache_ttl || ttl.id;
+        if (!cacheGlowApplies()) cacheGlowStop(true, false);
+        pickerView = 'main'; renderProviderModelPicker();
+      } catch (error) { note('（缓存时长没存上：' + error.message + '）', 'err'); }
+    })));
+  }
+  fillIcons(modelBody);
+}
+document.getElementById('modelThink').onclick = async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  curShowThinking = !curShowThinking; syncReasoningButton();      // 先拨过去，手感即时
+  try {
+    const data = await saveChatModelSetting({ show_thinking: curShowThinking });
+    curShowThinking = data.show_thinking !== false;
+    syncReasoningButton();
+    await loadSaid();
+  } catch (error) {
+    curShowThinking = !curShowThinking; syncReasoningButton();
+    note('（thinking 设置没存上：' + error.message + '）', 'err');
+  } finally { button.disabled = false; }
+};
+
 function renderProviderModelPicker() {
   modelBody.innerHTML = '';
   const settingsCatalog = catalogOrigin === 'settings';
-  modelTitle.textContent = settingsCatalog ? '模型目录' : (catalogMode === 'favorites' ? '切换模型' : '模型目录');
-  if (!settingsCatalog) {
-    const top = document.createElement('div'); top.className = 'catalog-bar';
-    const change = document.createElement('button'); change.className = 'ap-b'; change.textContent = catalogMode === 'favorites' ? '浏览模型库' : '← 常用模型';
-    change.onclick = () => { catalogMode = catalogMode === 'favorites' ? 'browse' : 'favorites'; renderProviderModelPicker(); };
-    top.appendChild(change);
-    const cachePicker = renderPromptCachePicker();
-    if (cachePicker) top.appendChild(cachePicker);
-    modelBody.appendChild(top);
-  }
-  if (!settingsCatalog && catalogMode === 'favorites') {
-    const current = (catalogData.items || []).find(item => item.provider_id === currentProviderId && item.model_id === curModel)
-      || (curModel ? { provider_id: currentProviderId, model_id: curModel } : null);
-    if (current) {
-      const label = document.createElement('div'); label.className = 'group-label'; label.textContent = '当前使用'; modelBody.appendChild(label);
-      const group = document.createElement('div'); group.className = 'group'; group.appendChild(composerModelSwipeRow(current, !!current.favorite)); modelBody.appendChild(group);
-    }
-    const label = document.createElement('div'); label.className = 'group-label'; label.textContent = '常用模型';
-    const hint = document.createElement('span'); hint.className = 'model-swipe-hint'; hint.textContent = '左滑可移出'; label.appendChild(hint);
-    modelBody.appendChild(label);
-    const favorites = (catalogData.favorites || []).filter(item => !(item.provider_id === currentProviderId && item.model_id === curModel));
-    if (!favorites.length) {
-      const empty = document.createElement('div'); empty.className = 'gnote'; empty.textContent = '还没有其他常用模型。常用项请在设置的模型目录里管理。'; modelBody.appendChild(empty);
-    } else {
-      const group = document.createElement('div'); group.className = 'group'; favorites.forEach(item => group.appendChild(composerModelSwipeRow(item, true))); modelBody.appendChild(group);
-    }
-    return;
-  }
+  modelSheetEl.classList.toggle('catalog', settingsCatalog || catalogMode !== 'favorites');
+  if (!settingsCatalog && catalogMode === 'favorites') { renderComposerPicker(); return; }
+  modelTitle.textContent = '模型目录';
+  modelBack.innerHTML = '';
+  modelBack.appendChild(icEl('chevL', 16));
   const select = document.createElement('select'); select.className = 'ap-in';
   catalogData.providers.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.name; if (p.id === catalogProviderId) o.selected = true; select.appendChild(o); });
   select.onchange = () => { catalogProviderId = select.value; renderProviderModelPicker(); };
@@ -12384,15 +12454,26 @@ async function openProviderModelPicker(mode = 'favorites', origin = 'chat') {
   modelTitle.textContent = origin === 'settings' ? '模型目录' : '模型';
   modelBody.innerHTML = '<div class="gnote">正在打开模型目录…</div>';
   modelSheetEl.classList.toggle('sub', origin === 'settings');
+  modelSheetEl.classList.toggle('catalog', origin === 'settings');
+  pickerView = 'main';
   modelSheetEl.classList.add('open');
   const settingsCatalog = catalogOrigin === 'settings';
   modelBack.innerHTML = '';
   modelBack.appendChild(icEl(settingsCatalog ? 'chevL' : 'x', 16));
-  modelBack.onclick = () => modelSheetEl.classList.remove('open');
+  // 返回键一级一级退：模型库 → More models → 主页 → 关掉
+  modelBack.onclick = () => {
+    if (catalogOrigin === 'settings') { modelSheetEl.classList.remove('open'); return; }
+    if (catalogMode !== 'favorites') { catalogMode = 'favorites'; pickerView = 'more'; renderProviderModelPicker(); return; }
+    if (pickerView !== 'main') { pickerView = 'main'; renderProviderModelPicker(); return; }
+    modelSheetEl.classList.remove('open');
+  };
   try {
     const selection = await (await fetch('api/model', {cache:'no-store'})).json();
     currentProviderId = selection.provider_id || '';
     curPromptCacheTtl = selection.prompt_cache_ttl || 'off';
+    curEffort = selection.effort || curEffort;
+    curShowThinking = selection.show_thinking !== false;
+    syncReasoningButton();
     setModelPill(selection.model || '');
     await getModelCatalog();
     renderProviderModelPicker();
