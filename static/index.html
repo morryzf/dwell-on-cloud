@@ -241,6 +241,10 @@ html[data-theme="dark"] .glass,
     font-size: 13px; padding: 6px 16px; border-radius: 14px;
   }
   .row { width: 100%; max-width: 720px; margin: 0 auto; }
+  /* 离可视区一屏半以外的消息先不画（每个气泡都是一块毛玻璃，聊天长了很吃力）。
+     占位高度是它真画时量下来的，所以滚动条、位置一点都不变；快到眼前再画回来。 */
+  /* 消息列表是竖排的 flex，不画的行没有「内容高度」撑着，会被挤成 0——锁住不许缩。 */
+  #log > .row.far { content-visibility: hidden; flex-shrink: 0; }
   .row.me { display: flex; justify-content: flex-end; }
   .proactive-divider {
     width: min(100%, 620px); margin: 8px auto 6px;
@@ -4637,6 +4641,42 @@ const scrollBottomBtn = document.getElementById('scrollBottom');
 function updateScrollBtn() { scrollBottomBtn.classList.toggle('show', !atBottom()); }
 log.addEventListener('scroll', updateScrollBtn, { passive: true });
 scrollBottomBtn.onclick = () => { log.scrollTo({ top: log.scrollHeight, behavior: 'smooth' }); };
+/* 远处的行先不画：一屏半以外挂 .far，按它真画时的高度占位；靠近了摘掉。
+   离得远才挂，所以气泡的阴影、菜单被裁这些副作用都发生在眼睛看不到的地方。 */
+const farRows = new IntersectionObserver(entries => {
+  const going = [];
+  for (const e of entries) {
+    if (e.isIntersecting) e.target.classList.remove('far');
+    else if (!e.target.classList.contains('far')) going.push([e.target, e.target.getBoundingClientRect().height]);
+  }
+  for (const [el, h] of going) {   // 先量完再改，免得量一个排一次版
+    if (!h) continue;
+    el.style.containIntrinsicSize = '0px ' + h + 'px';
+    el.classList.add('far');
+  }
+}, { root: log, rootMargin: '150% 0px' });
+new MutationObserver(list => {
+  for (const m of list) for (const n of m.addedNodes) if (n.classList && n.classList.contains('row')) farRows.observe(n);
+}).observe(log, { childList: true });
+/* 宽度变了（转屏、选择模式让出勾选框）行高跟着变，存下的占位高度就不准了：
+   全部摘掉重画一遍，再按新高度重新挂。 */
+function refreshFarRows() {
+  for (const el of log.querySelectorAll(':scope > .row')) {
+    el.classList.remove('far');
+    farRows.unobserve(el); farRows.observe(el);
+  }
+}
+let logWidth = 0;
+new ResizeObserver(() => {
+  const w = log.clientWidth;
+  if (w !== logWidth) { const first = !logWidth; logWidth = w; if (!first) refreshFarRows(); }
+}).observe(log);
+/* 容器变矮后滚动位置可能超出底线：电脑上浏览器当场纠正，iPhone 上却悬着不管，
+   要等手一碰才猛地跳回来。自己改了高度的地方都顺手按一下。 */
+function clampLogScroll() {
+  const max = log.scrollHeight - log.clientHeight;
+  if (log.scrollTop > max) log.scrollTop = max;
+}
 function row(cls) {
   const d = document.createElement('div');
   d.className = 'row ' + (cls || '');
@@ -4874,6 +4914,7 @@ function refreshMessageSelection() {
 /* 进出选择模式会给每行让出勾选框的位置，气泡重新折行、行也变高。
    不扶一把的话滚动条还停在原来的数字上，眼睛就被推到前面的消息去了。 */
 function keepMessageInPlace(anchorRow, mutate) {
+  refreshFarRows();
   const edge = log.getBoundingClientRect().top;
   const row = (anchorRow && anchorRow.isConnected) ? anchorRow
     : [...log.querySelectorAll('.row[data-message-id]')].find(el => el.getBoundingClientRect().bottom > edge);
@@ -6498,6 +6539,7 @@ function resetChatKeyboardAdjustment() {
   footerEl.style.paddingBottom = '';
   footerEl.style.transform = '';
   log.style.paddingBottom = (footerEl.offsetHeight + 48) + 'px';
+  clampLogScroll();
 }
 function fitKeyboard() {
   const vv = window.visualViewport;
@@ -6525,19 +6567,27 @@ function fitKeyboard() {
     kbShift = 0;
     footerEl.style.transform = '';
   }
-  log.style.paddingBottom = (footerEl.offsetHeight + (on ? -kbShift + 16 : 48)) + 'px';
+  /* 键盘起落那 0.3 秒，iOS 会把逐帧改排版的活儿压成幻灯片。这期间只挪输入卡
+     （它走的是 translateY，不用重排），消息列表的留白等键盘停稳了一次改好。 */
+  if (!kbAnimating) {
+    log.style.paddingBottom = (footerEl.offsetHeight + (on ? -kbShift + 16 : 48)) + 'px';
+    clampLogScroll();
+  }
   if (on && window.scrollY !== 0) window.scrollTo(0, 0);
 }
 /* 键盘是动画上来的（约 0.3 秒），头尾各校一次会卡在半路——整段动画都盯着 */
-let kbTracking = 0;
+let kbTracking = 0, kbAnimating = false;
 function trackKeyboard() {
   const me = ++kbTracking;
   let n = 0;
+  kbAnimating = true;
   const tick = () => {
     if (me !== kbTracking) return;
     fitKeyboard();
-    if (++n < 45) requestAnimationFrame(tick);
-    else if (kbGap > 20) scroll(true);
+    if (++n < 45) { requestAnimationFrame(tick); return; }
+    kbAnimating = false;
+    fitKeyboard();                  // 停稳了：留白一次改到位
+    if (kbGap > 20) scroll(true);
   };
   tick();
 }
