@@ -3752,6 +3752,13 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   @keyframes pushIn { from { transform: translateX(100%); } }
   #settingsSheet .sheet { transition: transform .3s cubic-bezier(.22,.8,.24,1), opacity .3s ease; }
   body:has(.sheetWrap.sub.open) #settingsSheet .sheet { transform: translateX(-28%); opacity: 0; pointer-events: none; }
+  /* 输入框各按钮打开的面板（加号、指令、工具、思考、模型）：里面行与行之间的线细一半（0.5px）。
+     原来的 1px 边框留着位置但透明，线改用 inset 阴影画——0.5px 的 border 有的浏览器会取整成 1px。 */
+  :is(#addSheet, #chatInstructionsSheet, #chatMcpSheet, #reasoningSheet, #modelSheet)
+    :is(.group .grow + .grow, .mrow + .mrow, .composer-model-swipe + .composer-model-swipe, .chat-mcp-detail, .model-catalog-row) {
+    border-top-color: transparent !important;
+    box-shadow: inset 0 .5px 0 var(--line) !important;
+  }
   /* 设置、心跳：同一组里的行与行之间不画分隔线，靠间距分开。 */
   #settingsSheet .group .grow + .grow, #heartbeatSheet .group .grow + .grow { border-top: 0 !important; }
   /* 心跳：卡片和输入框原来各自又叠一层模糊。套在已经模糊的面板里，手机上里层只能
@@ -5888,8 +5895,8 @@ function handle(d) {
     petSet('thinking');
     return;
   }
-  if (d.type === 'system' && d.subtype === 'newchat') { setArmed(false); log.innerHTML = ''; guEl = null; earliestSeq = null; olderBtn = null; note(d.text); return; }
-  if (d.type === 'system' && d.subtype === 'switched') { setArmed(false); log.innerHTML = ''; guEl = null; earliestSeq = null; olderBtn = null; note(d.text); return; }
+  if (d.type === 'system' && d.subtype === 'newchat') { loadChatModel(); setArmed(false); log.innerHTML = ''; guEl = null; earliestSeq = null; olderBtn = null; note(d.text); return; }
+  if (d.type === 'system' && d.subtype === 'switched') { loadChatModel(); setArmed(false); log.innerHTML = ''; guEl = null; earliestSeq = null; olderBtn = null; note(d.text); return; }
   if (d.type === 'system' && d.subtype === 'regenerating') {
     regeneratingMessageId = d.message_id || '';
     document.querySelector('#log .row[data-message-id="' + CSS.escape(regeneratingMessageId) + '"]')?.remove();
@@ -7400,7 +7407,7 @@ async function openSearchChatHit(hit) {
     earliestSeq = null; olderBtn = null;
     setTitle(chat.name);
     cacheGlowSetChat(chat.id);
-    refreshInstructionButton(); refreshMcpChatButton();
+    refreshInstructionButton(); refreshMcpChatButton(); loadChatModel();
     await loadSaid(hit.message_id);
     releaseBottomLock();                   // 这一趟是去找那句话的，别再扶着底
     document.querySelector('#log .row[data-message-id="' + CSS.escape(hit.message_id) + '"]')
@@ -11328,6 +11335,7 @@ function showChatHere(it) {
   cacheGlowSetChat(it.id);
   refreshInstructionButton();
   refreshMcpChatButton();
+  loadChatModel();
   loadSaid().then(() => poll());
 }
 
@@ -11702,7 +11710,9 @@ function modelSlug(id) {
 }
 function sameModel(cur, id) {
   const current = modelSlug(cur), target = modelSlug(id);
-  return current === target || (current.startsWith(target) && !current.slice(target.length).startsWith('['));
+  if (current === target) return true;
+  // 后面只能跟一个日期（-20251001 这种）。跟着 -5 就是 5.5，不是 5；跟着 [1m] 是另一档。
+  return current.startsWith(target) && /^-\d{8}$/.test(current.slice(target.length));
 }
 function displayName(id) {
   const all = MODELS_1M.concat(MODELS_MAIN, MODELS_MORE);
@@ -11710,7 +11720,7 @@ function displayName(id) {
   if (hit) return hit.name;
   // OpenRouter 可能带供应商前缀和小数点版本号，先规范化再按特征认。
   const s = String(id);
-  const m = modelSlug(s).match(/claude-(fable|opus|sonnet|haiku)-(\d+)(?:-(\d+))?/);
+  const m = modelSlug(s).match(/(?:^|claude-)(fable|opus|sonnet|haiku)-(\d+)(?:-(\d+))?/);
   if (m) {
     const fam = m[1][0].toUpperCase() + m[1].slice(1);
     return fam + ' ' + m[2] + (m[3] && m[3].length <= 2 ? '.' + m[3] : '');
@@ -11997,7 +12007,9 @@ async function openReasoningSheet() {
 reasoningBtn.onclick = openReasoningSheet;
 
 
-(async () => {
+/* 读这间聊天现在用的模型。启动时读一次，换窗口时也要读——不然胶囊上还挂着上一间的模型，
+   要等新窗口回第一句话才改过来。 */
+async function loadChatModel() {
   try {
     const d = await (await fetch('api/model')).json();
     curEffort = d.effort || 'high';
@@ -12007,7 +12019,8 @@ reasoningBtn.onclick = openReasoningSheet;
     setModelPill(d.model || '');
     syncReasoningButton();
   } catch { setModelPill(''); }
-})();
+}
+loadChatModel();
 
 /* ---------- 供应商模型库：常用在前，完整目录按需打开 ---------- */
 let catalogMode = 'favorites';
