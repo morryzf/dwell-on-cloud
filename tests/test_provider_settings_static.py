@@ -44,8 +44,12 @@ class ProviderSettingsStaticTest(unittest.TestCase):
     def test_settings_catalog_does_not_expose_chat_model_switching(self):
         self.assertIn("openProviderModelPicker('browse', 'settings')", self.ui)
         self.assertIn("const settingsCatalog = catalogOrigin === 'settings';", self.ui)
-        self.assertIn("if (!settingsCatalog) {", self.ui)
-        self.assertIn("if (!settingsCatalog && catalogMode === 'favorites') {", self.ui)
+        # 切换模型的面板（常用、Effort、thinking）只给聊天里打开的用，设置里只看目录
+        self.assertIn(
+            "if (!settingsCatalog && catalogMode === 'favorites') { renderComposerPicker(); return; }",
+            self.ui,
+        )
+        self.assertIn("#modelSheet.sub .model-think, #modelSheet.catalog .model-think { display: none; }", self.ui)
         self.assertIn("modelBack.appendChild(icEl(settingsCatalog ? 'chevL' : 'x', 16));", self.ui)
         self.assertIn("openProviderModelPicker('favorites', 'chat')", self.ui)
 
