@@ -6610,6 +6610,9 @@ let kbTracking = 0;
 function trackKeyboard() {
   const me = ++kbTracking;
   let n = 0;
+  /* 原来停在底部的，键盘起落这一路每帧都贴着底，不等动画全走完才一次跳上去
+     （iPhone 上那 45 帧被压得很慢，消息就慢了半拍）。手一碰就松开。 */
+  if (atBottom()) lockToBottom(1000);
   const tick = () => {
     if (me !== kbTracking) return;
     fitKeyboard();
@@ -6712,10 +6715,14 @@ box.addEventListener('touchend', (e) => {
   // 不能拿「输入框有没有焦点」判断：页面一打开就让它拿了焦点，iPhone 上那时并没有键盘。
   if (kbShift < 0 || kbGap > 20 || sheetIsOpen() || e.touches.length) return;
   e.preventDefault();
+  const stick = atBottom();
   const lift = kbGuess();
   kbPreShift = lift;
   kbShift = -lift;
   footerEl.style.transform = 'translateY(' + kbShift + 'px)';
+  // 消息和输入卡同一刻上去：留白先按估的键盘高度给足，原本在底部就贴着底
+  log.style.paddingBottom = (footerEl.offsetHeight + lift + 16) + 'px';
+  if (stick) log.scrollTop = log.scrollHeight;
   // 键盘没出来（外接键盘之类）就放回原处
   clearTimeout(kbPreShiftTimer);
   kbPreShiftTimer = setTimeout(() => { endKbPreShift(); fitKeyboard(); }, 900);
