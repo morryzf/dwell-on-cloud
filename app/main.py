@@ -19,13 +19,13 @@ import uuid
 from datetime import datetime
 from difflib import SequenceMatcher
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import httpx
 from fastapi import Body, Depends, FastAPI, File, HTTPException, Request, Response, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 
-from . import auth, db, file_text, provider_secrets, push_service, study
+from . import auth, db, file_make, file_text, provider_secrets, push_service, study
 from app.pet_assets import ensure_pet_assets
 from app.llm_client import prompt_cache_enabled, stream_chat
 from app.mcp_client import McpConnectionError, call_tool as mcp_call_tool, list_tools as mcp_list_tools
@@ -216,6 +216,49 @@ def _bounded_int(value, default: int, maximum: int) -> int:
         return max(1, min(int(value), maximum))
     except (TypeError, ValueError):
         return default
+
+
+# 做文件：用户要「整理成文件」「导出」「做个文档」时，把内容存成能下载的文件，聊天里出一张卡片。
+FILE_TOOL_NAME = "DwellFileCreate"
+FILE_TOOLS = [
+    {"type": "function", "function": {
+        "name": FILE_TOOL_NAME,
+        "description": (
+            "Create a downloadable file for the user. Use it only when the user asks for a file, "
+            "document, export, or something to download or save — not for ordinary replies. "
+            "The filename's extension decides the format: text formats (.txt .md .csv .json .html "
+            "and code files) store `content` as-is; .docx (Word) and .pdf are typeset from `content` "
+            "written as Markdown (headings, paragraphs, lists, **bold**, quotes, code blocks, tables); "
+            ".xlsx (Excel) takes one or more Markdown tables — a heading right above a table names "
+            "its sheet — or plain CSV; numbers become numbers, 12% becomes a percentage, and cells "
+            "starting with = are formulas. "
+            "The file appears in the chat as a card the user can open or save, so after creating it "
+            "just say briefly what it is — do not paste the whole content again."
+        ),
+        "parameters": {"type": "object", "properties": {
+            "filename": {"type": "string", "description": "File name with extension, e.g. 复习计划.docx"},
+            "content": {"type": "string", "description": "Full file content (Markdown for .docx/.pdf, tables or CSV for .xlsx)"},
+        }, "required": ["filename", "content"], "additionalProperties": False},
+    }},
+]
+
+
+def file_tool(chat_id: str, arguments: dict) -> str:
+    name, mime, data = file_make.make_file(arguments.get("filename"), arguments.get("content"))
+    item = db.generated_file_add(chat_id, name, mime, data)
+    return json.dumps({"ok": True, "file": {
+        "id": item["id"], "name": item["name"], "mime": item["mime"], "size": item["size"],
+        "url": "api/files/" + item["id"],
+    }}, ensure_ascii=False)
+
+
+def _slim_file_tool_call(tool_call_id: str, name: str, arguments: dict, is_error: bool) -> None:
+    """文件做好了，正文已经在文件里；调用记录里只留文件名和字数，不再存第二份。"""
+    if name != FILE_TOOL_NAME or is_error or not isinstance(arguments, dict):
+        return
+    content = str(arguments.get("content") or "")
+    slim = {"filename": arguments.get("filename"), "content": f"（已存成文件，共 {len(content)} 字）"}
+    db.tool_call_slim_arguments(tool_call_id, json.dumps(slim, ensure_ascii=False))
 
 
 def home_tool(name: str, arguments: dict) -> str:
@@ -940,6 +983,9 @@ async def _chat_tools(chat_id: str) -> tuple[list[dict], dict[str, object]]:
         tools.extend(HOME_TOOLS)
         for tool in HOME_TOOLS:
             tool_map[tool["function"]["name"]] = "builtin:home"
+    tools.extend(FILE_TOOLS)
+    for tool in FILE_TOOLS:
+        tool_map[tool["function"]["name"]] = "builtin:file"
     for server in db.chat_mcp_servers(chat_id):
         try:
             server_tools = await mcp_list_tools(server)
@@ -1049,6 +1095,9 @@ def _heartbeat_tool_allowed(tool: dict, server: object) -> bool:
         return True
     if server == "builtin:home":
         return name in HEARTBEAT_READ_HOME_TOOLS
+    if server == "builtin:file":
+        # 文件是用户要了才做的
+        return False
     return bool(server) and _heartbeat_read_tool(tool)
 
 
@@ -1876,6 +1925,52 @@ def _cal_response(extra: dict | None = None) -> dict:
     if extra:
         response.update(extra)
     return response
+
+
+@app.get("/api/files/{file_id}/view", dependencies=authed)
+async def generated_file_view(file_id: str):
+    """Word / Excel 的阅读视图：iPhone 的浏览器直接打开是一片空白，这里读回来排成网页。"""
+    item = db.generated_file_get(file_id)
+    if not item:
+        raise HTTPException(404, "文件不在了")
+    ext = item["name"].rsplit(".", 1)[-1].lower()
+    if ext not in file_make.PREVIEW_TYPES:
+        return RedirectResponse("../" + file_id, status_code=307)
+    render = file_make.docx_to_html if ext == "docx" else file_make.xlsx_to_html
+    page = await asyncio.to_thread(render, item["data"], item["name"], f"../{file_id}?download=1")
+    return HTMLResponse(page, headers={
+        # 页面是我们自己排的，内容都转义过；再加一道：只许跑返回键那一小段，不许加载外面的东西
+        "Content-Security-Policy": file_make.PREVIEW_CSP,
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "private, max-age=3600",
+    })
+
+
+@app.get("/api/files/{file_id}", dependencies=authed)
+async def generated_file_get(file_id: str, download: bool = False):
+    """模型做的文件。默认在浏览器里直接打开（iPhone 上是预览），?download=1 是存下来。
+
+    文件内容是模型写的。HTML、XML 打开时关进沙盒（不跑脚本、不带登录态）；其余按声明的
+    类型给，不许浏览器自己猜。
+    """
+    item = db.generated_file_get(file_id)
+    if not item:
+        raise HTTPException(404, "文件不在了")
+    quoted = quote(item["name"], safe="")
+    fallback = "".join(ch if ch.isascii() and ch.isalnum() or ch in "._-" else "_" for ch in item["name"])
+    disposition = "attachment" if download else "inline"
+    mime = item["mime"]
+    if mime.startswith("text/") or mime in {"application/json", "application/xml"}:
+        mime += "; charset=utf-8"
+    headers = {
+        "Content-Disposition": f"{disposition}; filename=\"{fallback}\"; filename*=UTF-8''{quoted}",
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "private, max-age=31536000, immutable",
+    }
+    if item["mime"] in {"text/html", "application/xml"}:
+        # 能跑脚本的只有这两种；PDF 别加，加了有的浏览器就不肯显示了
+        headers["Content-Security-Policy"] = "sandbox"
+    return Response(content=item["data"], media_type=mime, headers=headers)
 
 
 @app.get("/api/cal", dependencies=authed)
@@ -4569,6 +4664,11 @@ async def _run_ai_reply(chat_id: str, msg_id: str, watch_context: dict | None = 
                     elif server == "builtin:home":
                         result = home_tool(name, arguments)
                         is_error = False
+                    elif server == "builtin:file":
+                        # 排 PDF 要好几秒（第一次还可能在下字体），放到线程里，别把整个服务卡住
+                        result = await asyncio.to_thread(file_tool, chat_id, arguments)
+                        is_error = False
+                        _slim_file_tool_call(record["id"], name, arguments, is_error)
                     elif not server:
                         raise ValueError("模型请求了未启用的 MCP 工具")
                     else:

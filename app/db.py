@@ -180,6 +180,19 @@ CREATE TABLE IF NOT EXISTS pending_uploads (
     made      INTEGER NOT NULL
 );
 
+-- 模型在聊天里做出来的文件（文字类、Word、PDF）。跟着聊天走，聊天删了它也删。
+CREATE TABLE IF NOT EXISTS generated_files (
+    id      TEXT PRIMARY KEY,
+    chat_id TEXT NOT NULL,
+    name    TEXT NOT NULL,
+    mime    TEXT NOT NULL,
+    size    INTEGER NOT NULL,
+    data    BLOB NOT NULL,
+    made    INTEGER NOT NULL,
+    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS ix_generated_files_chat ON generated_files(chat_id, made);
+
 -- 聊天图片只保存前端压缩后的缩略图。原图仍只用于当次模型请求，避免数据库膨胀。
 CREATE TABLE IF NOT EXISTS message_attachments (
     id         TEXT PRIMARY KEY,
@@ -1386,6 +1399,30 @@ def pending_upload_add(name: str, text: str, size: int = 0, truncated: bool = Fa
             row,
         )
     return row
+
+
+def generated_file_add(chat_id: str, name: str, mime: str, data: bytes) -> dict:
+    row = {"id": new_id(), "chat_id": chat_id, "name": name, "mime": mime,
+           "size": len(data), "data": data, "made": int(time.time())}
+    with conn() as cx:
+        cx.execute(
+            """INSERT INTO generated_files (id,chat_id,name,mime,size,data,made)
+               VALUES (:id,:chat_id,:name,:mime,:size,:data,:made)""",
+            row,
+        )
+    return {key: value for key, value in row.items() if key != "data"}
+
+
+def generated_file_get(file_id: str) -> dict | None:
+    with conn() as cx:
+        row = cx.execute("SELECT * FROM generated_files WHERE id=?", (file_id,)).fetchone()
+    return dict(row) if row else None
+
+
+def tool_call_slim_arguments(tool_call_id: str, arguments: str) -> None:
+    """工具调用记录里把大段参数换成摘要（做文件时正文已经存成文件了，不留第二份）。"""
+    with conn() as cx:
+        cx.execute("UPDATE tool_calls SET arguments=? WHERE id=?", (arguments, tool_call_id))
 
 
 def pending_upload_take(ids: list[str]) -> list[dict]:

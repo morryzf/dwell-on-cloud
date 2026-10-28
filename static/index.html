@@ -3470,6 +3470,40 @@ html[data-theme="dark"] .crow { border-color: rgba(255,255,255,.1); box-shadow: 
   .process-band .toolline .spin {
     width: 11px; height: 11px; border-width: 1.5px;
   }
+  /* 模型做好的文件卡片：独占一行，和过程带同一种玻璃 */
+  .process-band .gen-file {
+    flex: 0 0 100%; max-width: min(86vw, 340px);
+    display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px 0;
+    border-radius: 16px; box-sizing: border-box;
+    color: var(--msg-cloudy-text, #514a4f);
+    background: color-mix(in srgb, var(--msg-cloudy-bg, rgba(248,242,245,.46)) 82%, transparent);
+    box-shadow: inset 0 0 0 .5px color-mix(in srgb, var(--msg-cloudy-border, rgba(255,255,255,.42)) 80%, var(--line)), 0 3px 10px rgba(72,54,64,.05);
+    -webkit-backdrop-filter: blur(12px) saturate(1.25);
+    backdrop-filter: blur(12px) saturate(1.25);
+  }
+  .gen-file-open {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px;
+    padding: 6px 4px 6px 8px; color: inherit; text-decoration: none; border-radius: 12px;
+    transition: transform 150ms ease, opacity 150ms ease;
+  }
+  .gen-file-open:active { transform: scale(.98); opacity: .8; }
+  .gen-file-badge {
+    flex: none; width: 38px; height: 44px; border-radius: 8px;
+    display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; box-sizing: border-box;
+    font-size: 9.5px; font-weight: 700; letter-spacing: .02em; color: #fff;
+    background: color-mix(in srgb, var(--accent) 82%, #fff);
+  }
+  .gen-file[data-ext="pdf"] .gen-file-badge { background: #c9778b; }
+  .gen-file[data-ext="docx"] .gen-file-badge { background: #7f8fb8; }
+  .gen-file[data-ext="xlsx"] .gen-file-badge { background: #7aa58a; }
+  .gen-file-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .gen-file-copy b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gen-file-copy small { font-size: 11.5px; color: var(--dim); }
+  .gen-file-save {
+    flex: none; width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; color: var(--dim);
+  }
+  .gen-file-save:active { transform: scale(.94); }
   .row.has-usage { padding-bottom: 20px; }
   .row.has-usage.actions-on { padding-bottom: 30px; }
   .msg-usage {
@@ -5657,6 +5691,7 @@ function addToolUse(part) {
     line.onclick = () => openToolSheet(g.ids);
   }
   curGroup.ids.push(part.id);
+  toolInfo[part.id].band = curGroup.lineEl.parentElement;
   doingOnTool(toolInfo[part.id]);      // 那行字跟着我手上的活走
   renderGroupLine();
   guEl = null;
@@ -5667,10 +5702,63 @@ function markToolDone(id, isError, content) {
   if (!t) return;
   t.done = true; t.isError = !!isError;
   t.result = flattenResult(content);
+  if (t.name === 'DwellFileCreate' && !isError) addGeneratedFileCard(t);
   if (curGroup && curGroup.ids.includes(id) && curGroup.ids.every(i => toolInfo[i].done)) {
     curGroup.spinEl.style.display = 'none';
     doingToolDone();                   // 手上活干完了，那行字退回随机词
   }
+}
+/* 模型做好的文件：过程带下面一张卡片。点卡片在浏览器里打开（iPhone 上是预览，
+   从那里能存到「文件」或分享），右边那颗是直接下载。 */
+function fileSizeText(bytes) {
+  const n = Number(bytes) || 0;
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return Math.round(n / 1024) + ' KB';
+  return (n / 1024 / 1024).toFixed(1) + ' MB';
+}
+function runningAsHomeScreenApp() {
+  return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+}
+function addGeneratedFileCard(t) {
+  let file = null;
+  try { file = JSON.parse(t.result || '{}').file; } catch (e) {}
+  if (!file || !file.id || !t.band || !t.band.isConnected) return;
+  if (t.band.querySelector('.gen-file[data-file-id="' + CSS.escape(file.id) + '"]')) return;
+  const name = String(file.name || '文件');
+  const ext = (name.includes('.') ? name.split('.').pop() : 'file').slice(0, 4).toUpperCase();
+  const card = document.createElement('div');
+  card.className = 'gen-file';
+  card.dataset.fileId = file.id;
+  card.dataset.ext = ext.toLowerCase();
+  const open = document.createElement('a');
+  open.className = 'gen-file-open';
+  // Word、Excel 在 iPhone 浏览器里直接打开是一片空白，点进阅读视图（里面有返回和下载）
+  open.href = 'api/files/' + encodeURIComponent(file.id) + (ext === 'DOCX' || ext === 'XLSX' ? '/view' : '');
+  open.target = '_blank'; open.rel = 'noopener';
+  const badge = document.createElement('span'); badge.className = 'gen-file-badge'; badge.textContent = ext;
+  const copy = document.createElement('span'); copy.className = 'gen-file-copy';
+  const title = document.createElement('b'); title.textContent = name;
+  const meta = document.createElement('small'); meta.textContent = ext + ' · ' + fileSizeText(file.size);
+  copy.append(title, meta);
+  open.append(badge, copy);
+  const save = document.createElement('a');
+  save.className = 'gen-file-save';
+  save.href = 'api/files/' + encodeURIComponent(file.id) + '?download=1';
+  // 新窗口开，不用 download 属性：当 App 用时同一个窗口里下载会被系统的「文件」页顶掉、
+  // 回不来；新窗口是 iPhone 自带的小浏览器，有关闭键
+  save.target = '_blank'; save.rel = 'noopener';
+  save.onclick = event => {
+    // 加到主屏幕当 App 用时 iPhone 下载不了（新窗口一片空白），只给一句提示
+    if (!runningAsHomeScreenApp()) return;
+    event.preventDefault();
+    note('（主屏幕上的 dwell 下载不了文件，在 Safari 里打开 dwell 再点下载）');
+  };
+  save.setAttribute('aria-label', '下载 ' + name);
+  save.title = '下载';
+  save.appendChild(icEl('download', 17));
+  card.append(open, save);
+  t.band.appendChild(card);
+  if (!replayingHistory) scroll();
 }
 function closeGroup() {
   if (curGroup) { curGroup.spinEl.style.display = 'none'; curGroup = null; }
