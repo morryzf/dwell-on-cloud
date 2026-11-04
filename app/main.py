@@ -231,13 +231,17 @@ FILE_TOOLS = [
             "written as Markdown (headings, paragraphs, lists, **bold**, quotes, code blocks, tables); "
             ".xlsx (Excel) takes one or more Markdown tables — a heading right above a table names "
             "its sheet — or plain CSV; numbers become numbers, 12% becomes a percentage, and cells "
-            "starting with = are formulas. "
+            "starting with = are formulas; "
+            ".pptx (PowerPoint) takes Markdown: a leading # heading plus a line or two becomes the cover, "
+            "every ## heading (or ---) starts a new slide, lists become bullet points, tables become tables, "
+            "and a paragraph starting with 备注： or Notes: becomes that slide's speaker notes — keep each "
+            "slide to a few short points. "
             "The file appears in the chat as a card the user can open or save, so after creating it "
             "just say briefly what it is — do not paste the whole content again."
         ),
         "parameters": {"type": "object", "properties": {
             "filename": {"type": "string", "description": "File name with extension, e.g. 复习计划.docx"},
-            "content": {"type": "string", "description": "Full file content (Markdown for .docx/.pdf, tables or CSV for .xlsx)"},
+            "content": {"type": "string", "description": "Full file content (Markdown for .docx/.pdf/.pptx, tables or CSV for .xlsx)"},
         }, "required": ["filename", "content"], "additionalProperties": False},
     }},
 ]
@@ -1936,7 +1940,8 @@ async def generated_file_view(file_id: str):
     ext = item["name"].rsplit(".", 1)[-1].lower()
     if ext not in file_make.PREVIEW_TYPES:
         return RedirectResponse("../" + file_id, status_code=307)
-    render = file_make.docx_to_html if ext == "docx" else file_make.xlsx_to_html
+    render = {"docx": file_make.docx_to_html, "xlsx": file_make.xlsx_to_html,
+              "pptx": file_make.pptx_to_html}[ext]
     page = await asyncio.to_thread(render, item["data"], item["name"], f"../{file_id}?download=1")
     return HTMLResponse(page, headers={
         # 页面是我们自己排的，内容都转义过；再加一道：只许跑返回键那一小段，不许加载外面的东西
