@@ -12,8 +12,12 @@ data/fonts 里，以后一直用这份。都不行就报一句清楚的错，让
 Excel（.xlsx）的内容写成一张或几张 Markdown 表格（表格上面的标题就是工作表名），
 或者直接写 CSV。数字存成数字、百分数存成百分比、「=」开头的是公式。
 
-Word 和 Excel 在 iPhone 的浏览器里都打不开（一片空白），所以另给一个「阅读视图」：
-docx_to_html / xlsx_to_html 把做好的文件读回来，变成一页能看的网页。
+PPT（.pptx）也写 Markdown：开头的 # 加一两行字是封面，每个 ## 开一页，--- 也开一页；
+列表是要点，表格是表格，「备注：」开头的那段放进演讲者备注。字多了自动缩字号，
+最小号还放不下就拆成「（续）」页。
+
+Word、Excel、PPT 在 iPhone 的浏览器里都打不开（一片空白），所以另给一个「阅读视图」：
+docx_to_html / xlsx_to_html / pptx_to_html 把做好的文件读回来，变成一页能看的网页。
 """
 from __future__ import annotations
 
@@ -47,9 +51,10 @@ TEXT_TYPES = {
 DOC_TYPES = {
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "pdf": "application/pdf",
 }
-PREVIEW_TYPES = {"docx", "xlsx"}       # 这两种点卡片进阅读视图
+PREVIEW_TYPES = {"docx", "xlsx", "pptx"}   # 这几种点卡片进阅读视图
 SUPPORTED = sorted(TEXT_TYPES) + sorted(DOC_TYPES)
 
 
@@ -87,6 +92,8 @@ def make_file(filename: object, content: object) -> tuple[str, str, bytes]:
         data, mime = markdown_to_docx(text), DOC_TYPES["docx"]
     elif ext == "xlsx":
         data, mime = content_to_xlsx(text), DOC_TYPES["xlsx"]
+    elif ext == "pptx":
+        data, mime = content_to_pptx(text), DOC_TYPES["pptx"]
     elif ext == "pdf":
         data, mime = markdown_to_pdf(text), DOC_TYPES["pdf"]
     else:
@@ -565,6 +572,14 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .sheet-table td.long { white-space: normal; min-width: 14em; }
 .sheet-table td.formula { color: var(--dim); font: 13px Menlo, monospace; }
 h2.sheet { font-size: 1.05em; color: var(--dim); margin: 1.6em 0 .4em; }
+.slide { position: relative; margin: 14px 0 6px; padding: 18px 18px 14px; border-radius: 14px;
+  background: color-mix(in srgb, var(--code) 55%, var(--bg)); box-shadow: inset 0 0 0 .5px var(--line); }
+.slide .no { position: absolute; top: 10px; right: 14px; font-size: 12px; color: var(--dim); }
+.slide h1 { font-size: 1.45em; margin: .2em 0 .3em; padding-left: 10px; box-shadow: inset 3px 0 0 var(--accent); }
+.slide h2 { font-size: 1.15em; margin: 0 0 .6em; padding-bottom: .35em; box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--accent) 45%, transparent); display: inline-block; }
+.slide p { margin: .25em 0; } .slide p.cover-sub { color: var(--dim); } .slide p.sub { font-weight: 600; }
+.slide .li { display: flex; gap: .5em; } .slide .mk { flex: none; color: var(--accent); min-width: .9em; }
+.notes { margin: 0 4px 14px; font-size: 13px; color: var(--dim); }
 """
 
 # 页面上唯一一段脚本，CSP 按它的指纹放行，别的一律不许跑：
@@ -810,6 +825,311 @@ def xlsx_to_html(data: bytes, title: str, download_url: str) -> str:
         parts.append('<div class="table"><table class="sheet-table">' + "".join(rows) + "</table></div>")
     workbook.close()
     return _preview_page(title, "".join(parts), download_url, "下载 Excel")
+
+
+# ---------------------------------------------------------------- PPT
+
+_SLIDE_W, _SLIDE_H = 13.333, 7.5        # 16:9，单位英寸
+_PPT_INK, _PPT_DIM, _PPT_ACCENT, _PPT_SOFT = "2B2629", "8A7F84", "C9778B", "F6ECEF"
+_NOTE_PREFIXES = ("备注：", "备注:", "Notes:", "Note:", "notes:")
+_BODY_SIZES = (24, 22, 20, 18, 16)      # 正文字号从大往小试，塞得下就用
+
+
+def _slides_from_markdown(text: str) -> list[dict]:
+    """把 Markdown 切成一页一页：# / ## 开新页，--- 也开新页。
+    开头的 # 加上紧跟的几段字是封面；只有标题没有内容的页当分节页。"""
+    slides: list[dict] = []
+    current: dict | None = None
+
+    def start(title: str = "") -> dict:
+        nonlocal current
+        current = {"title": title, "items": [], "tables": [], "notes": []}
+        slides.append(current)
+        return current
+
+    for block in blocks(text):
+        kind = block["type"]
+        if kind == "heading" and block["level"] <= 2:
+            start(plain(block["text"]))
+            current["level"] = block["level"]
+            continue
+        if kind == "rule":
+            start("")
+            continue
+        if current is None:
+            start("")
+        if kind == "para" and block["text"].strip().startswith(_NOTE_PREFIXES):
+            note = block["text"].strip()
+            for prefix in _NOTE_PREFIXES:
+                if note.startswith(prefix):
+                    note = note[len(prefix):].strip()
+                    break
+            current["notes"].append(plain(note))
+        elif kind == "heading":
+            current["items"].append({"kind": "sub", "text": block["text"], "level": 0})
+        elif kind == "para":
+            current["items"].append({"kind": "para", "text": block["text"], "level": 0})
+        elif kind == "list":
+            number = 0
+            for item in block["items"]:
+                number = number + 1 if item["ordered"] else 0
+                current["items"].append({
+                    "kind": "num" if item["ordered"] else "bullet", "text": item["text"],
+                    "level": min(item["level"], 2), "number": number,
+                })
+        elif kind == "quote":
+            current["items"].append({"kind": "quote", "text": block["text"], "level": 0})
+        elif kind == "code":
+            for line in (block["text"] or " ").split("\n"):
+                current["items"].append({"kind": "code", "text": line, "level": 0})
+        elif kind == "table":
+            current["tables"].append(block["rows"])
+    slides = [s for s in slides if s["title"] or s["items"] or s["tables"]]
+    if not slides:
+        raise ValueError("PPT 的内容是空的。用 # 写封面标题、## 开每一页")
+    first = slides[0]
+    first["cover"] = (first.get("level") == 1 and not first["tables"]
+                      and all(item["kind"] == "para" for item in first["items"]))
+    for slide in slides[1:]:
+        slide["cover"] = False
+    return slides
+
+
+def _item_lines(item: dict, size: int) -> int:
+    """这一条大概占几行：中文按两格宽算，一行能放多少格看字号。"""
+    width = 11.7 - 0.45 * item["level"] - (0.35 if item["kind"] in {"bullet", "num"} else 0)
+    per_line = max(8, int(width * 72 / (size * 0.52)))
+    return max(1, -(-_display_width(plain(item["text"])) // per_line))
+
+
+def _fit(items: list[dict], height_in: float) -> tuple[int, list[dict], list[dict]]:
+    """挑最大的放得下的字号；最小号也放不下，就把放不下的留给下一页。"""
+    for size in _BODY_SIZES:
+        lines = sum(_item_lines(item, size) for item in items)
+        if lines * size * 1.45 / 72 + 0.12 * len(items) * size / 72 <= height_in:
+            return size, items, []
+    size = _BODY_SIZES[-1]
+    used, kept = 0.0, []
+    for index, item in enumerate(items):
+        need = _item_lines(item, size) * size * 1.45 / 72 + 0.12 * size / 72
+        if kept and used + need > height_in:
+            return size, kept, items[index:]
+        kept.append(item)
+        used += need
+    return size, kept, []
+
+
+def content_to_pptx(text: str) -> bytes:
+    from pptx import Presentation
+    from pptx.dml.color import RGBColor
+    from pptx.enum.text import MSO_ANCHOR
+    from pptx.oxml.ns import qn
+    from pptx.util import Emu, Inches, Pt
+
+    prs = Presentation()
+    prs.slide_width, prs.slide_height = Inches(_SLIDE_W), Inches(_SLIDE_H)
+    blank = prs.slide_layouts[6]
+
+    def style_run(run, size, bold=False, color=_PPT_INK, italic=False, mono=False):
+        font = run.font
+        font.size = Pt(size)
+        font.bold = bold
+        font.italic = italic
+        font.color.rgb = RGBColor.from_string(color)
+        font.name = "Menlo" if mono else "Helvetica Neue"
+        rpr = run._r.get_or_add_rPr()
+        for tag in ("a:ea", "a:cs"):
+            node = rpr.find(qn(tag))
+            if node is None:
+                node = rpr.makeelement(qn(tag), {})
+                rpr.append(node)
+            node.set("typeface", "PingFang SC")
+
+    def write_runs(paragraph, line, size, color=_PPT_INK, bold=False, italic=False, mono=False):
+        for kind, chunk in inline_runs(line):
+            run = paragraph.add_run()
+            run.text = chunk
+            style_run(run, size, bold=bold or kind == "b", color=color,
+                      italic=italic or kind == "i", mono=mono or kind == "code")
+
+    def bullet(paragraph, item):
+        ppr = paragraph._p.get_or_add_pPr()
+        for child in list(ppr):
+            if child.tag in {qn("a:buChar"), qn("a:buAutoNum"), qn("a:buNone")}:
+                ppr.remove(child)
+        if item["kind"] in {"bullet", "num"}:
+            left = Inches(0.46 + 0.45 * item["level"])
+            ppr.set("marL", str(int(left)))
+            ppr.set("indent", str(-int(Inches(0.38))))
+            color = ppr.makeelement(qn("a:buClr"), {})
+            color.append(color.makeelement(qn("a:srgbClr"), {"val": _PPT_ACCENT}))
+            ppr.append(color)
+            if item["kind"] == "num":
+                ppr.append(ppr.makeelement(qn("a:buAutoNum"), {"type": "arabicPeriod"}))
+            else:
+                ppr.append(ppr.makeelement(qn("a:buChar"), {"char": "•" if item["level"] == 0 else "–"}))
+        else:
+            ppr.set("marL", "0")
+            ppr.set("indent", "0")
+            ppr.append(ppr.makeelement(qn("a:buNone"), {}))
+
+    def textbox(slide, name, left, top, width, height):
+        shape = slide.shapes.add_textbox(Inches(left), Inches(top), Inches(width), Inches(height))
+        shape.name = name
+        frame = shape.text_frame
+        frame.word_wrap = True
+        frame.margin_left = frame.margin_right = Inches(0.02)
+        return shape, frame
+
+    def bar(slide, left, top, width, height, color=_PPT_ACCENT):
+        from pptx.enum.shapes import MSO_SHAPE
+        shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(left), Inches(top), Inches(width), Inches(height))
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = RGBColor.from_string(color)
+        shape.line.fill.background()
+        shape.name = "accent"
+        return shape
+
+    def add_notes(slide, notes):
+        if notes:
+            slide.notes_slide.notes_text_frame.text = "\n".join(notes)
+
+    def add_table(slide, rows, top, height):
+        cols = len(rows[0])
+        shape = slide.shapes.add_table(len(rows), cols, Inches(0.8), Inches(top), Inches(11.7),
+                                       Inches(min(height, 0.45 * len(rows))))
+        shape.name = "table"
+        table = shape.table
+        size = 16 if len(rows) <= 6 else 13 if len(rows) <= 12 else 11
+        for r, row in enumerate(rows):
+            for c, value in enumerate(row):
+                cell = table.cell(r, c)
+                cell.fill.solid()
+                cell.fill.fore_color.rgb = RGBColor.from_string(_PPT_SOFT if r == 0 else "FFFFFF")
+                frame = cell.text_frame
+                frame.paragraphs[0].text = ""
+                write_runs(frame.paragraphs[0], value, size, bold=r == 0)
+                cell.vertical_anchor = MSO_ANCHOR.MIDDLE
+
+    def content_slide(spec, title, items, tables, notes):
+        slide = prs.slides.add_slide(blank)
+        _, frame = textbox(slide, "title", 0.8, 0.45, 11.7, 1.0)
+        frame.vertical_anchor = MSO_ANCHOR.BOTTOM
+        write_runs(frame.paragraphs[0], title or " ", 30, bold=True)
+        bar(slide, 0.8, 1.55, 0.9, 0.06)
+        top, bottom = 1.9, _SLIDE_H - 0.55
+        if items:
+            room = bottom - top - (0.5 * min(8, sum(len(t) for t in tables)) if tables else 0)
+            size, kept, rest = _fit(items, max(1.2, room))
+            _, body = textbox(slide, "body", 0.8, top, 11.7, max(1.2, room))
+            for index, item in enumerate(kept):
+                paragraph = body.paragraphs[0] if index == 0 else body.add_paragraph()
+                bullet(paragraph, item)
+                paragraph.space_after = Pt(size * 0.35)
+                if item["kind"] == "sub":
+                    write_runs(paragraph, item["text"], size + 2, bold=True)
+                elif item["kind"] == "quote":
+                    write_runs(paragraph, "“" + item["text"] + "”", size, color=_PPT_DIM, italic=True)
+                elif item["kind"] == "code":
+                    write_runs(paragraph, "`" + item["text"] + "`" if item["text"].strip() else " ", size - 3,
+                               color=_PPT_DIM, mono=True)
+                    paragraph.space_after = Pt(0)
+                else:
+                    write_runs(paragraph, item["text"], size)
+            used = sum(_item_lines(item, size) for item in kept) * size * 1.45 / 72 + 0.12 * len(kept) * size / 72
+            top += min(room, used) + 0.25
+            if rest:
+                add_notes(slide, notes)
+                content_slide(spec, (title or "") + "（续）", rest, tables, [])
+                return
+        for rows in tables:
+            add_table(slide, rows, top, bottom - top)
+            top += 0.45 * len(rows) + 0.3
+        add_notes(slide, notes)
+
+    for spec in _slides_from_markdown(text):
+        if spec["cover"]:
+            slide = prs.slides.add_slide(blank)
+            bar(slide, 0.8, 2.55, 0.09, 1.25)
+            _, frame = textbox(slide, "cover-title", 1.15, 2.35, 11.2, 1.6)
+            frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+            write_runs(frame.paragraphs[0], spec["title"], 44, bold=True)
+            if spec["items"]:
+                _, sub = textbox(slide, "cover-subtitle", 1.15, 4.05, 11.2, 1.8)
+                for index, item in enumerate(spec["items"]):
+                    paragraph = sub.paragraphs[0] if index == 0 else sub.add_paragraph()
+                    write_runs(paragraph, item["text"], 20, color=_PPT_DIM)
+            add_notes(slide, spec["notes"])
+        elif spec["title"] and not spec["items"] and not spec["tables"]:
+            slide = prs.slides.add_slide(blank)          # 分节页：只有一个大标题
+            _, frame = textbox(slide, "section", 0.8, 2.8, 11.7, 1.6)
+            frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+            write_runs(frame.paragraphs[0], spec["title"], 38, bold=True)
+            bar(slide, 0.8, 4.5, 0.9, 0.06)
+            add_notes(slide, spec["notes"])
+        else:
+            content_slide(spec, spec["title"], spec["items"], spec["tables"], spec["notes"])
+
+    buffer = io.BytesIO()
+    prs.save(buffer)
+    return buffer.getvalue()
+
+
+def pptx_to_html(data: bytes, title: str, download_url: str) -> str:
+    """把 PPT 读回来：一页一张卡片，标题、要点（带层级和编号）、表格、演讲者备注。"""
+    from pptx import Presentation
+    from pptx.oxml.ns import qn
+
+    prs = Presentation(io.BytesIO(data))
+    cards: list[str] = []
+    for number, slide in enumerate(prs.slides, 1):
+        head, body = "", []
+        shapes = sorted(slide.shapes, key=lambda s: (s.top or 0, s.left or 0))
+        for shape in shapes:
+            if shape.has_text_frame and shape.name in {"title", "cover-title", "section"}:
+                tag = "h1" if shape.name != "title" else "h2"
+                head = f"<{tag}>" + html.escape(shape.text_frame.text.strip()) + f"</{tag}>"
+            elif shape.has_text_frame and shape.name == "cover-subtitle":
+                body.append('<p class="cover-sub">' + "<br>".join(
+                    html.escape(p.text) for p in shape.text_frame.paragraphs if p.text.strip()) + "</p>")
+            elif shape.has_text_frame and shape.text_frame.text.strip():
+                counters: dict[int, int] = {}
+                for paragraph in shape.text_frame.paragraphs:
+                    text = paragraph.text
+                    if not text.strip():
+                        continue
+                    ppr = paragraph._p.pPr
+                    marl = int(ppr.get("marL", "0")) if ppr is not None else 0
+                    level = max(0, round((marl / 914400 - 0.46) / 0.45)) if marl else 0
+                    numbered = ppr is not None and ppr.find(qn("a:buAutoNum")) is not None
+                    bulleted = ppr is not None and ppr.find(qn("a:buChar")) is not None
+                    bold = all(run.font.bold for run in paragraph.runs if run.text.strip())
+                    if numbered:
+                        counters[level] = counters.get(level, 0) + 1
+                        for deeper in [k for k in counters if k > level]:
+                            counters.pop(deeper)
+                        mark = f'<span class="mk">{counters[level]}.</span>'
+                    elif bulleted:
+                        counters.pop(level, None)
+                        mark = '<span class="mk">•</span>'
+                    else:
+                        counters.clear()
+                        mark = ""
+                    cls = "li" if mark else ("sub" if bold else "p")
+                    body.append(f'<p class="{cls}" style="margin-left:{level * 1.3}em">{mark}'
+                                + html.escape(text) + "</p>")
+            elif getattr(shape, "has_table", False) and shape.has_table:
+                rows = []
+                for r, row in enumerate(shape.table.rows):
+                    tag = "th" if r == 0 else "td"
+                    rows.append("<tr>" + "".join(
+                        f"<{tag}>" + html.escape(cell.text) + f"</{tag}>" for cell in row.cells) + "</tr>")
+                body.append('<div class="table"><table>' + "".join(rows) + "</table></div>")
+        notes = ""
+        if slide.has_notes_slide and slide.notes_slide.notes_text_frame.text.strip():
+            notes = '<div class="notes">备注：' + html.escape(slide.notes_slide.notes_text_frame.text.strip()) + "</div>"
+        cards.append(f'<section class="slide"><span class="no">{number}</span>{head}{"".join(body)}</section>{notes}')
+    return _preview_page(title, "".join(cards), download_url, "下载 PPT")
 
 
 if __name__ == "__main__" and "--ensure-font" in sys.argv:

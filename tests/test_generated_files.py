@@ -122,6 +122,36 @@ class MakeFileTest(unittest.TestCase):
         self.assertIn("'sha256-" + digest + "'", file_make.PREVIEW_CSP)
         self.assertIn("default-src 'none'", file_make.PREVIEW_CSP)
 
+    def test_pptx_cover_slides_notes_table_and_overflow_split(self):
+        from pptx import Presentation
+
+        long_list = "\n".join(f"- 第{i}条：" + "很长的一句话，" * 12 for i in range(1, 15))
+        content = ("# 期中复习\n\n小组汇报\n\n## 要点\n\n- 信度\n  - 重测\n- 效度\n\n备注：先问一个问题\n\n"
+                   "## 分值\n\n| 章 | 分 |\n|---|---|\n| 一 | 15 |\n\n# 第二部分\n\n## 很长\n\n" + long_list + "\n")
+        _, mime, data = file_make.make_file("复习.pptx", content)
+        self.assertIn("presentationml", mime)
+        prs = Presentation(io.BytesIO(data))
+        names = [[shape.name for shape in slide.shapes] for slide in prs.slides]
+        titles = [next((s.text_frame.text for s in slide.shapes if s.has_text_frame
+                        and s.name in {"title", "cover-title", "section"}), "") for slide in prs.slides]
+        self.assertEqual(titles[:4], ["期中复习", "要点", "分值", "第二部分"])
+        self.assertIn("cover-subtitle", names[0])
+        self.assertIn("table", names[2])
+        self.assertNotIn("body", names[3])                       # 分节页只有大标题
+        self.assertEqual(prs.slides[1].notes_slide.notes_text_frame.text, "先问一个问题")
+        self.assertEqual(titles[4], "很长")
+        self.assertTrue(all(t == "很长（续）" for t in titles[5:]) and len(titles) > 5)   # 放不下的拆到续页
+        body_text = "".join(s.text_frame.text for slide in list(prs.slides)[4:] for s in slide.shapes
+                            if s.has_text_frame and s.name == "body")
+        self.assertIn("第14条", body_text)                        # 一条都没丢
+
+    def test_pptx_reading_view(self):
+        _, _, data = file_make.make_file("a.pptx", "# 封面\n\n副标题\n\n## 第一页\n\n1. 一\n2. 二\n- 点\n\n备注：讲稿\n")
+        page = file_make.pptx_to_html(data, "a.pptx", "../x?download=1")
+        for piece in ("<h1>封面</h1>", "<h2>第一页</h2>", '<span class="mk">1.</span>一',
+                      '<span class="mk">2.</span>二', '<span class="mk">•</span>点', "备注：讲稿", "下载 PPT"):
+            self.assertIn(piece, page)
+
     def test_pdf_embeds_chinese_text(self):
         if not file_make.find_cjk_font()[0]:
             self.skipTest("这台机器没有中文字体")
@@ -284,7 +314,7 @@ class FileCardStaticTest(unittest.TestCase):
         html = (Path(__file__).resolve().parents[1] / "static" / "index.html").read_text(encoding="utf-8")
         self.assertIn("if (t.name === 'DwellFileCreate' && !isError) addGeneratedFileCard(t);", html)
         self.assertIn("save.href = 'api/files/' + encodeURIComponent(file.id) + '?download=1';", html)
-        self.assertIn("(ext === 'DOCX' || ext === 'XLSX' ? '/view' : '')", html)
+        self.assertIn("(['DOCX', 'XLSX', 'PPTX'].includes(ext) ? '/view' : '')", html)
 
 
 if __name__ == "__main__":
